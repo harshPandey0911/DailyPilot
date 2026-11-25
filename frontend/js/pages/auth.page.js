@@ -1,24 +1,24 @@
-import { S, esc, errBox, setErr, localDate } from '../state.js';
+import { S, IC, esc, errBox, setErr, localDate } from '../state.js';
 import { api } from '../api.js';
 
 export function authView() {
   const reg = S.authMode === 'register';
-  return `<div class="dp-auth-wrap ${reg ? 'signup' : 'login'}">
+  return `<div class="dp-auth-wrap">
     <div class="dp-auth-brand">
-      <img src="/assets/logo.jpg" alt="DailyPilot" class="dp-auth-logo">
+      <div class="dp-auth-logo" aria-hidden="true">${IC.logoLg}</div>
       <h1>DailyPilot</h1>
-      <div class="mute">${reg ? 'Create your account to unlock personalized plans' : 'Welcome back — sign in to your daily OS'}</div>
+      <div class="mute">${reg ? 'Create your account to unlock personalized plans' : 'Sign in to your daily productivity OS'}</div>
     </div>
 
     ${errBox()}
 
-    <form id="authForm" class="card dp-auth-card">
-      <div class="dp-auth-card-head">
-        <h2>${reg ? 'Create Account' : 'Sign In'}</h2>
-        <span class="dp-auth-badge">${reg ? 'Personalized Setup' : 'Member Access'}</span>
+    <form id="authForm" class="dp-auth-card">
+      <div class="dp-seg dp-auth-tabs" role="tablist" aria-label="Authentication mode">
+        <button type="button" class="dp-seg-btn ${!reg ? 'on' : ''}" id="goLogin">Sign In</button>
+        <button type="button" class="dp-seg-btn ${reg ? 'on' : ''}" id="goSignup">Create Account</button>
       </div>
       ${reg ? `
-        <label style="margin-top:0">Full Name</label>
+        <label class="dp-label-first">Full Name</label>
         <input name="name" required maxlength="60" placeholder="Your full name">
         <div class="row">
           <div><label>Age</label><input name="age" type="number" min="13" max="80" required placeholder="24"></div>
@@ -33,20 +33,14 @@ export function authView() {
           <div><label>Activity</label><select name="activity"><option value="sedentary">Sedentary</option><option value="light">Light</option><option value="moderate" selected>Moderate</option><option value="active">Very Active</option></select></div>
           <div><label>Diet</label><select name="diet_pref"><option value="both">Both</option><option value="veg">Veg Only</option><option value="nonveg">Non-Veg</option></select></div>
         </div>
-        <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:600;cursor:pointer"><input type="checkbox" name="skin_care" value="1" style="width:auto;margin:0"> Include Skin-Care Nutrition &amp; Tips</label>
+        <label class="dp-check-row"><input type="checkbox" name="skin_care" value="1"> Include Skin-Care Nutrition &amp; Tips</label>
         <div id="bmiPreview" class="dp-auth-bmi"></div>
       ` : ''}
-      <label style="${reg ? '' : 'margin-top:0'}">Email</label>
+      <label class="${reg ? '' : 'dp-label-first'}">Email</label>
       <input name="email" type="email" required placeholder="you@example.com">
       <label>Password ${reg ? '(min 8 chars)' : ''}</label>
       <input name="password" type="password" required minlength="${reg ? 8 : 1}" placeholder="••••••••">
-      <button class="btn dp-btn-grad" type="submit">${reg ? 'Create Account &amp; Start' : 'Sign In'}</button>
-
-      <div class="dp-auth-switch">
-        ${reg
-          ? `Already have an account? <button type="button" class="link" id="goLogin">Sign In</button>`
-          : `New to DailyPilot? <button type="button" class="link" id="goSignup">Create Account</button>`}
-      </div>
+      <button class="btn" type="submit">${reg ? 'Create Account &amp; Start' : 'Sign In'}</button>
     </form>
   </div>`;
 }
@@ -61,7 +55,7 @@ export function bindAuth(render, boot, go) {
     const prev = document.getElementById('bmiPreview');
     if (!prev) return;
     const h = Number(form.height_cm?.value), w = Number(form.weight_kg?.value);
-    prev.textContent = h > 90 && w > 20 ? `Live BMI: ${(w / ((h / 100) ** 2)).toFixed(1)} • Personalized calories ready on login` : '';
+    prev.textContent = h > 90 && w > 20 ? `Live BMI: ${(w / ((h / 100) ** 2)).toFixed(1)} · Personalized calories ready on login` : '';
   };
   form.onsubmit = async e => {
     e.preventDefault();
@@ -77,12 +71,18 @@ export function bindAuth(render, boot, go) {
 
 export function onboardView() {
   const f = S.form;
-  return `<div class="dp-auth-wrap" style="padding-top:16px"><h1>Complete Profile</h1><p class="mute">Required to calculate your daily targets</p>${errBox()}
-    <form id="onboardForm" class="card">
+  return `<div class="dp-auth-wrap">
+    <div class="dp-auth-brand">
+      <div class="dp-auth-logo" aria-hidden="true">${IC.logoLg}</div>
+      <h1>Complete Profile</h1>
+      <div class="mute">Required to calculate your daily targets</div>
+    </div>
+    ${errBox()}
+    <form id="onboardForm" class="dp-auth-card">
       <div class="row">
-        <div><label>Age</label><input name="age" type="number" required value="${esc(f.age || 24)}"></div>
-        <div><label>Height (cm)</label><input name="height_cm" type="number" required value="${esc(f.height_cm || 175)}"></div>
-        <div><label>Weight (kg)</label><input name="weight_kg" type="number" step="0.1" required value="${esc(f.weight_kg || 70)}"></div>
+        <div><label class="dp-label-first">Age</label><input name="age" type="number" required value="${esc(f.age || 24)}"></div>
+        <div><label class="dp-label-first">Height (cm)</label><input name="height_cm" type="number" required value="${esc(f.height_cm || 175)}"></div>
+        <div><label class="dp-label-first">Weight (kg)</label><input name="weight_kg" type="number" step="0.1" required value="${esc(f.weight_kg || 70)}"></div>
       </div>
       <div class="row">
         <div><label>Gender</label><select name="gender"><option value="male">Male</option><option value="female">Female</option></select></div>
@@ -92,9 +92,10 @@ export function onboardView() {
         <div><label>Activity</label><select name="activity"><option value="sedentary">Sedentary</option><option value="light">Light</option><option value="moderate" selected>Moderate</option><option value="active">Active</option></select></div>
         <div><label>Diet</label><select name="diet_pref"><option value="both">Both</option><option value="veg">Veg Only</option><option value="nonveg">Non-Veg</option></select></div>
       </div>
-      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:600;cursor:pointer"><input type="checkbox" name="skin_care" value="1" style="width:auto;margin:0"> Include Skin-Care Nutrition &amp; Tips</label>
-      <button class="btn dp-btn-grad">Save &amp; Continue</button>
-    </form></div>`;
+      <label class="dp-check-row"><input type="checkbox" name="skin_care" value="1"> Include Skin-Care Nutrition &amp; Tips</label>
+      <button class="btn" type="submit">Save &amp; Continue</button>
+    </form>
+  </div>`;
 }
 
 export function bindOnboard(render, loadData) {

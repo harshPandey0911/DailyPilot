@@ -17,6 +17,8 @@ const SLOTS = {
 };
 
 const ICONS = {
+  logo: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 2.5 2.5 7.2l4.4 1.9 1.9 4.4 4.7-11z"/><path d="M6.9 9.1 13.5 2.5"/></svg>',
+  logoLg: '<svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 2.5 2.5 7.2l4.4 1.9 1.9 4.4 4.7-11z"/><path d="M6.9 9.1 13.5 2.5"/></svg>',
   dash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
   meals: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>',
   foods: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/></svg>',
@@ -50,8 +52,8 @@ let S = {
     tips: { q: '', status: 'all' },
     users: { q: '', role: 'all', goal: 'all' },
   },
-  drawer: null, // { type: 'meal'|'food'|'tip'|'user', data: ..., err: '' }
-  modal: null,  // { type: 'verify-meal'|'verify-tip'|'confirm', ... }
+  drawer: null,
+  modal: null,
 };
 
 function toast(msg, kind = 'ok') {
@@ -59,7 +61,7 @@ function toast(msg, kind = 'ok') {
   el.className = `toast ${kind}`;
   el.textContent = msg;
   $toasts.appendChild(el);
-  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.25s'; setTimeout(() => el.remove(), 260); }, 3400);
+  setTimeout(() => { el.classList.add('is-leaving'); setTimeout(() => el.remove(), 180); }, 3400);
 }
 
 async function api(path, method = 'GET', body) {
@@ -131,28 +133,28 @@ async function loadTab(tab, keepDrawer = false) {
 function loginView() {
   return `
   <div class="auth-shell">
-    <div class="auth-card">
+    <div class="auth-wrap">
       <div class="auth-brand">
-        <img src="assets/logo.jpg" alt="DailyPilot">
-        <div>
-          <h1>DailyPilot Admin</h1>
-          <p>Sign in to manage nutrition, content &amp; users</p>
-        </div>
+        <div class="auth-logo" aria-hidden="true">${ICONS.logoLg}</div>
+        <h1>DailyPilot Admin</h1>
+        <p>Sign in to manage nutrition, content &amp; users</p>
       </div>
-      ${S.loginErr ? `<div class="alert alert-err" style="margin-bottom:16px">${esc(S.loginErr)}</div>` : ''}
-      <form id="login-form">
-        <div class="field">
-          <label>Admin Email</label>
-          <input name="email" type="email" placeholder="admin@gmail.com" required autofocus>
+      <div class="auth-card">
+        ${S.loginErr ? `<div class="alert alert-err alert--compact">${esc(S.loginErr)}</div>` : ''}
+        <form id="login-form">
+          <div class="field">
+            <label>Admin Email</label>
+            <input name="email" type="email" placeholder="admin@gmail.com" required autofocus>
+          </div>
+          <div class="field">
+            <label>Password</label>
+            <input name="password" type="password" placeholder="••••••••" required>
+          </div>
+          <button class="btn btn--block" type="submit">Sign in to Console</button>
+        </form>
+        <div class="auth-footer">
+          <a href="/">← Back to DailyPilot User App</a>
         </div>
-        <div class="field">
-          <label>Password</label>
-          <input name="password" type="password" placeholder="••••••••" required>
-        </div>
-        <button class="btn" style="width:100%;margin-top:4px" type="submit">Sign in to Console</button>
-      </form>
-      <div style="margin-top:18px;text-align:center;font-size:12.5px;color:var(--mute)">
-        <a href="/">← Back to DailyPilot User App</a>
       </div>
     </div>
   </div>`;
@@ -167,11 +169,12 @@ function dashView() {
   const wPct = p.workouts ? Math.round((p.workoutsDone / p.workouts) * 100) : 0;
   const gPct = p.goals ? Math.round((p.goalsDone / p.goals) * 100) : 0;
 
-  const barRow = (label, val, max, color = '') => {
+  const barRow = (label, val, max, tone = '') => {
     const pct = max ? Math.round((val / max) * 100) : 0;
+    const toneCls = tone ? `dp-progress--${tone}` : '';
     return `<div>
       <div class="bar-row-top"><span>${esc(label)}</span><span class="mono mute">${val} (${pct}%)</span></div>
-      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;${color ? `background:${color}` : ''}"></div></div>
+      <progress class="dp-progress ${toneCls}" value="${pct}" max="100"></progress>
     </div>`;
   };
 
@@ -181,7 +184,7 @@ function dashView() {
       <div>
         <b>Expert Review Pending:</b> <b>${s.needsReviewMeals}</b> meals and <b>${s.needsReviewTips}</b> skin tips are starter data awaiting doctor/dietitian sign-off.
       </div>
-      <div style="display:flex;gap:8px;flex-shrink:0">
+      <div class="alert-actions">
         ${s.needsReviewMeals ? `<button class="btn btn-sm" id="go-review-meals">Review Meals</button>` : ''}
         ${s.needsReviewTips ? `<button class="btn btn-sec btn-sm" id="go-review-tips">Review Tips</button>` : ''}
       </div>
@@ -197,7 +200,7 @@ function dashView() {
         <div class="kpi-val mono">${s.users}</div>
         <div class="kpi-sub">Active community members</div>
       </div>
-      <div class="kpi-icon" style="background:var(--brand-soft);color:var(--brand)">${ICONS.users}</div>
+      <div class="kpi-icon ic-brand">${ICONS.users}</div>
     </div>
     <div class="kpi">
       <div>
@@ -205,7 +208,7 @@ function dashView() {
         <div class="kpi-val mono">${s.publishedMeals}</div>
         <div class="kpi-sub">${s.draftMeals} drafts in progress</div>
       </div>
-      <div class="kpi-icon" style="background:var(--fit-soft);color:var(--fit)">${ICONS.meals}</div>
+      <div class="kpi-icon ic-fit">${ICONS.meals}</div>
     </div>
     <div class="kpi">
       <div>
@@ -213,15 +216,15 @@ function dashView() {
         <div class="kpi-val mono">${s.foods}</div>
         <div class="kpi-sub">Verified per-100g ingredients</div>
       </div>
-      <div class="kpi-icon" style="background:var(--goals-soft);color:var(--goals)">${ICONS.foods}</div>
+      <div class="kpi-icon ic-goals">${ICONS.foods}</div>
     </div>
     <div class="kpi">
       <div>
         <div class="kpi-label">Pending Reviews</div>
-        <div class="kpi-val mono" style="color:${totalPending ? 'var(--warn)' : 'var(--fit)'}">${totalPending}</div>
+        <div class="kpi-val mono ${totalPending ? 'kpi-val--warn' : 'kpi-val--ok'}">${totalPending}</div>
         <div class="kpi-sub">${s.needsReviewMeals} meals · ${s.needsReviewTips} tips</div>
       </div>
-      <div class="kpi-icon" style="background:var(--warn-soft);color:var(--warn)">${ICONS.tips}</div>
+      <div class="kpi-icon ic-warn">${ICONS.tips}</div>
     </div>
   </div>
 
@@ -233,11 +236,11 @@ function dashView() {
       </div>
       <div class="bar-list">
         ${barRow('Breakfast', s.mealSlots?.breakfast || 0, totalMeals)}
-        ${barRow('Lunch', s.mealSlots?.lunch || 0, totalMeals, 'var(--fit)')}
-        ${barRow('Evening Snack', s.mealSlots?.snack || 0, totalMeals, 'var(--goals)')}
-        ${barRow('Dinner', s.mealSlots?.dinner || 0, totalMeals, 'var(--study)')}
+        ${barRow('Lunch', s.mealSlots?.lunch || 0, totalMeals, 'fit')}
+        ${barRow('Evening Snack', s.mealSlots?.snack || 0, totalMeals, 'goals')}
+        ${barRow('Dinner', s.mealSlots?.dinner || 0, totalMeals, 'study')}
       </div>
-      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px">
+      <div class="card-foot-meta">
         <span class="badge badge-ok">Veg: ${s.dietBreakdown?.veg || 0}</span>
         <span class="badge badge-warn">Non-Veg: ${s.dietBreakdown?.nonveg || 0}</span>
       </div>
@@ -249,9 +252,9 @@ function dashView() {
         <button class="btn btn-sec btn-sm" id="go-pillars">View Activity →</button>
       </div>
       <div class="bar-list">
-        ${barRow('Stay Fit', s.userGoals?.fit || 0, s.users, 'var(--fit)')}
-        ${barRow('Lose Weight', s.userGoals?.lose || 0, s.users, 'var(--goals)')}
-        ${barRow('Build / Bulk', s.userGoals?.bulk || 0, s.users, 'var(--study)')}
+        ${barRow('Stay Fit', s.userGoals?.fit || 0, s.users, 'fit')}
+        ${barRow('Lose Weight', s.userGoals?.lose || 0, s.users, 'goals')}
+        ${barRow('Build / Bulk', s.userGoals?.bulk || 0, s.users, 'study')}
       </div>
       <div class="pillar-mini-grid">
         <div class="pillar-mini">
@@ -295,7 +298,7 @@ function dashView() {
       <div class="card-head">
         <h3 class="card-title">Content Governance Rules</h3>
       </div>
-      <ul style="margin:0;padding-left:18px;color:var(--ink-2);display:flex;flex-direction:column;gap:10px;font-size:13.5px">
+      <ul class="gov-list">
         <li><b>Expert Sign-Off:</b> Meals &amp; skin tips can only be published with a valid <b>source</b> and <b>reviewer</b> (doctor/dietitian).</li>
         <li><b>Calculated Macros:</b> Meal calories and P/C/F are auto-computed from ingredient weights — never hand-typed.</li>
         <li><b>Atwater Check:</b> Food entries are validated so kcal aligns with protein/carbs/fat per 100 g.</li>
@@ -348,12 +351,12 @@ function mealsView() {
     <div class="table-scroll">
       <table>
         <thead>
-          <tr><th>Meal</th><th>Slot</th><th>Diet</th><th>Nutrition</th><th>Status</th><th>Reviewer</th><th style="text-align:right">Actions</th></tr>
+          <tr><th>Meal</th><th>Slot</th><th>Diet</th><th>Nutrition</th><th>Status</th><th>Reviewer</th><th class="th-right">Actions</th></tr>
         </thead>
         <tbody>
           ${list.length ? list.map(m => `<tr>
             <td>
-              <div class="cell-title">${esc(m.title)} ${m.skin_friendly ? '<span class="badge badge-study" style="margin-left:4px">Skin</span>' : ''}</div>
+              <div class="cell-title">${esc(m.title)} ${m.skin_friendly ? '<span class="badge badge-study badge--gap">Skin</span>' : ''}</div>
               <div class="cell-sub">${m.items.length} ingredients${m.allergens ? ` · Allergens: ${esc(m.allergens)}` : ''}</div>
             </td>
             <td>${SLOTS[m.slot] || m.slot}</td>
@@ -365,7 +368,7 @@ function mealsView() {
               <div class="actions">
                 ${pending(m.reviewed_by) ? `<button class="btn btn-fit btn-sm" data-verify-meal="${m.id}">Verify</button>` : ''}
                 <button class="btn btn-sec btn-sm" data-edit-meal="${m.id}">Edit</button>
-                <button class="btn btn-sec btn-sm" style="color:var(--err)" data-del-meal="${m.id}">Delete</button>
+                <button class="btn btn-sec btn-sm btn-del" data-del-meal="${m.id}">Delete</button>
               </div>
             </td>
           </tr>`).join('') : `<tr><td colspan="7"><div class="empty"><b>No meals match your filters</b>Try clearing search or changing status filter.</div></td></tr>`}
@@ -391,7 +394,7 @@ function foodsView() {
   <div class="table-card">
     <div class="table-scroll">
       <table>
-        <thead><tr><th>Food (per 100 g)</th><th>Calories</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Source</th><th style="text-align:right">Actions</th></tr></thead>
+        <thead><tr><th>Food (per 100 g)</th><th>Calories</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Source</th><th class="th-right">Actions</th></tr></thead>
         <tbody>
           ${list.length ? list.map(x => `<tr>
             <td><div class="cell-title">${esc(x.name)}</div></td>
@@ -403,7 +406,7 @@ function foodsView() {
             <td>
               <div class="actions">
                 <button class="btn btn-sec btn-sm" data-edit-food="${x.id}">Edit</button>
-                <button class="btn btn-sec btn-sm" style="color:var(--err)" data-del-food="${x.id}">Delete</button>
+                <button class="btn btn-sec btn-sm btn-del" data-del-food="${x.id}">Delete</button>
               </div>
             </td>
           </tr>`).join('') : `<tr><td colspan="7"><div class="empty"><b>No foods found</b>Add a new food ingredient or adjust search.</div></td></tr>`}
@@ -440,10 +443,10 @@ function tipsView() {
   <div class="table-card">
     <div class="table-scroll">
       <table>
-        <thead><tr><th>Skin Tip</th><th>Status</th><th>Source</th><th>Reviewer</th><th style="text-align:right">Actions</th></tr></thead>
+        <thead><tr><th>Skin Tip</th><th>Status</th><th>Source</th><th>Reviewer</th><th class="th-right">Actions</th></tr></thead>
         <tbody>
           ${list.length ? list.map(t => `<tr>
-            <td style="max-width:380px">
+            <td class="td-tip-body">
               <div class="cell-title">${esc(t.title)}</div>
               <div class="cell-sub">${esc(t.body.slice(0, 110))}${t.body.length > 110 ? '…' : ''}</div>
             </td>
@@ -454,7 +457,7 @@ function tipsView() {
               <div class="actions">
                 ${pending(t.reviewed_by) ? `<button class="btn btn-fit btn-sm" data-verify-tip="${t.id}">Verify</button>` : ''}
                 <button class="btn btn-sec btn-sm" data-edit-tip="${t.id}">Edit</button>
-                <button class="btn btn-sec btn-sm" style="color:var(--err)" data-del-tip="${t.id}">Delete</button>
+                <button class="btn btn-sec btn-sm btn-del" data-del-tip="${t.id}">Delete</button>
               </div>
             </td>
           </tr>`).join('') : `<tr><td colspan="5"><div class="empty"><b>No skin tips found</b>Create a new tip or adjust filters.</div></td></tr>`}
@@ -490,7 +493,7 @@ function usersView() {
         <option value="bulk" ${f.goal === 'bulk' ? 'selected' : ''}>Bulk</option>
       </select>
     </div>
-    <div style="display:flex;align-items:center;gap:10px">
+    <div class="inline-gap">
       <span class="mute">${list.length} accounts</span>
       <button class="btn" id="new-user">+ New User</button>
     </div>
@@ -498,7 +501,7 @@ function usersView() {
   <div class="table-card">
     <div class="table-scroll">
       <table>
-        <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Goal &amp; Diet</th><th>Weight</th><th>Joined</th><th style="text-align:right">Actions</th></tr></thead>
+        <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Goal &amp; Diet</th><th>Weight</th><th>Joined</th><th class="th-right">Actions</th></tr></thead>
         <tbody>
           ${list.length ? list.map(u => `<tr>
             <td><div class="cell-title">${esc(u.name)}</div><div class="cell-sub">${esc(u.email)}</div></td>
@@ -542,7 +545,7 @@ function pillarsView() {
           <td class="mono">${w.calories} kcal</td>
           <td class="mute">${esc(w.date)}</td>
           <td><span class="badge ${w.done ? 'badge-ok' : 'badge-mute'}">${w.done ? 'Done' : 'Planned'}</span></td>
-          <td><button class="btn btn-sec btn-sm" style="color:var(--err)" data-del-act="workouts:${w.id}">Delete</button></td>
+          <td><button class="btn btn-sec btn-sm btn-del" data-del-act="workouts:${w.id}">Delete</button></td>
         </tr>`).join('') : '<tr><td colspan="8"><div class="empty"><b>No exercises logged yet</b></div></td></tr>'}</tbody>
       </table>` : ''}
       ${t === 'foodLogs' ? `<table>
@@ -554,7 +557,7 @@ function pillarsView() {
           <td class="mono"><b>${Math.round(l.kcal)}</b> kcal</td>
           <td class="mono">${l.protein || 0} / ${l.carbs || 0} / ${l.fat || 0}g</td>
           <td class="mute">${esc(l.date)}</td>
-          <td><button class="btn btn-sec btn-sm" style="color:var(--err)" data-del-act="food_logs:${l.id}">Delete</button></td>
+          <td><button class="btn btn-sec btn-sm btn-del" data-del-act="food_logs:${l.id}">Delete</button></td>
         </tr>`).join('') : '<tr><td colspan="7"><div class="empty"><b>No custom food logs yet</b></div></td></tr>'}</tbody>
       </table>` : ''}
       ${t === 'study' ? `<table>
@@ -567,7 +570,7 @@ function pillarsView() {
           <td class="mono">${s.duration_min} min</td>
           <td class="mute">${esc(s.date)}</td>
           <td><span class="badge ${s.done ? 'badge-ok' : 'badge-mute'}">${s.done ? 'Completed' : 'In Progress'}</span></td>
-          <td><button class="btn btn-sec btn-sm" style="color:var(--err)" data-del-act="study:${s.id}">Delete</button></td>
+          <td><button class="btn btn-sec btn-sm btn-del" data-del-act="study:${s.id}">Delete</button></td>
         </tr>`).join('') : '<tr><td colspan="8"><div class="empty"><b>No study sessions logged yet</b></div></td></tr>'}</tbody>
       </table>` : ''}
       ${t === 'goals' ? `<table>
@@ -579,7 +582,7 @@ function pillarsView() {
           <td><span class="badge ${g.priority === 'high' ? 'badge-err' : g.priority === 'medium' ? 'badge-warn' : 'badge-mute'}">${esc(g.priority)}</span></td>
           <td class="mute">${esc(g.date)}</td>
           <td><span class="badge ${g.done ? 'badge-ok' : 'badge-mute'}">${g.done ? 'Done' : 'Open'}</span></td>
-          <td><button class="btn btn-sec btn-sm" style="color:var(--err)" data-del-act="goals:${g.id}">Delete</button></td>
+          <td><button class="btn btn-sec btn-sm btn-del" data-del-act="goals:${g.id}">Delete</button></td>
         </tr>`).join('') : '<tr><td colspan="7"><div class="empty"><b>No goals logged yet</b></div></td></tr>'}</tbody>
       </table>` : ''}
     </div>
@@ -627,9 +630,9 @@ function renderDrawer() {
           <h2>${m.id ? 'Edit Meal' : 'New Meal'}</h2>
           <button class="icon-btn" id="close-drawer">${ICONS.close}</button>
         </div>
-        <form id="meal-form" style="display:flex;flex-direction:column;flex:1;min-height:0">
+        <form id="meal-form" class="drawer-form">
           <div class="drawer-body">
-            ${d.err ? `<div class="alert alert-err" style="margin-bottom:14px">${esc(d.err)}</div>` : ''}
+            ${d.err ? `<div class="alert alert-err alert--compact">${esc(d.err)}</div>` : ''}
             <div class="macro-preview" id="meal-macro-preview">
               <div><b id="mp-kcal">0</b><span>kcal</span></div>
               <div><b id="mp-p">0g</b><span>Protein</span></div>
@@ -673,9 +676,9 @@ function renderDrawer() {
           <h2>${f.id ? 'Edit Food' : 'New Food (per 100 g)'}</h2>
           <button class="icon-btn" id="close-drawer">${ICONS.close}</button>
         </div>
-        <form id="food-form" style="display:flex;flex-direction:column;flex:1;min-height:0">
+        <form id="food-form" class="drawer-form">
           <div class="drawer-body">
-            ${d.err ? `<div class="alert alert-err" style="margin-bottom:14px">${esc(d.err)}</div>` : ''}
+            ${d.err ? `<div class="alert alert-err alert--compact">${esc(d.err)}</div>` : ''}
             <div class="field"><label>Food Name</label><input name="name" required value="${esc(f.name)}"></div>
             <div class="form-grid">
               <div class="field"><label>Calories (kcal)</label><input name="kcal" type="number" step="0.1" min="0" required value="${f.kcal ?? ''}"></div>
@@ -683,7 +686,7 @@ function renderDrawer() {
               <div class="field"><label>Carbs (g)</label><input name="carbs" type="number" step="0.1" min="0" required value="${f.carbs ?? ''}"></div>
               <div class="field"><label>Fat (g)</label><input name="fat" type="number" step="0.1" min="0" required value="${f.fat ?? ''}"></div>
             </div>
-            <div id="food-atwater" class="mute" style="font-size:12.5px;margin-bottom:14px"></div>
+            <div id="food-atwater" class="atwater-note"></div>
             <div class="form-grid">
               <div class="field"><label>Source Name</label><input name="source_name" value="${esc(f.source_name)}" placeholder="USDA FoodData Central / IFCT 2017"></div>
               <div class="field"><label>Source URL</label><input name="source_url" value="${esc(f.source_url)}"></div>
@@ -706,9 +709,9 @@ function renderDrawer() {
           <h2>${t.id ? 'Edit Skin Tip' : 'New Skin Tip'}</h2>
           <button class="icon-btn" id="close-drawer">${ICONS.close}</button>
         </div>
-        <form id="tip-form" style="display:flex;flex-direction:column;flex:1;min-height:0">
+        <form id="tip-form" class="drawer-form">
           <div class="drawer-body">
-            ${d.err ? `<div class="alert alert-err" style="margin-bottom:14px">${esc(d.err)}</div>` : ''}
+            ${d.err ? `<div class="alert alert-err alert--compact">${esc(d.err)}</div>` : ''}
             <div class="field"><label>Title</label><input name="title" required value="${esc(t.title)}"></div>
             <div class="field"><label>Body</label><textarea name="body" rows="4" required>${esc(t.body)}</textarea></div>
             <div class="form-grid">
@@ -734,9 +737,9 @@ function renderDrawer() {
           <h2>Create New User</h2>
           <button class="icon-btn" id="close-drawer">${ICONS.close}</button>
         </div>
-        <form id="new-user-form" style="display:flex;flex-direction:column;flex:1;min-height:0">
+        <form id="new-user-form" class="drawer-form">
           <div class="drawer-body">
-            ${d.err ? `<div class="alert alert-err" style="margin-bottom:14px">${esc(d.err)}</div>` : ''}
+            ${d.err ? `<div class="alert alert-err alert--compact">${esc(d.err)}</div>` : ''}
             <div class="field"><label>Full Name</label><input name="name" required placeholder="Alex Morgan"></div>
             <div class="field"><label>Email</label><input name="email" type="email" required placeholder="user@example.com"></div>
             <div class="field"><label>Password (min 8 chars)</label><input name="password" type="password" minlength="8" required></div>
@@ -765,7 +768,7 @@ function renderDrawer() {
           <button class="icon-btn" id="close-drawer">${ICONS.close}</button>
         </div>
         <div class="drawer-body">
-          <div class="seg-tabs" style="margin-bottom:14px">
+          <div class="seg-tabs">
             <button class="${utab === 'overview' ? 'active' : ''}" data-utab="overview">Profile &amp; Edit</button>
             <button class="${utab === 'exercises' ? 'active' : ''}" data-utab="exercises">Exercises (${workouts.length})</button>
             <button class="${utab === 'diet' ? 'active' : ''}" data-utab="diet">Diet (${foodLogs.length})</button>
@@ -778,7 +781,7 @@ function renderDrawer() {
               <div><b>${targets.protein}g</b><span>Protein</span></div>
               <div><b>${targets.carbs}g</b><span>Carbs</span></div>
               <div><b>${targets.fat}g</b><span>Fat</span></div>
-            </div>` : '<div class="alert alert-warn" style="margin-bottom:14px">User has not completed onboarding profile yet.</div>'}
+            </div>` : '<div class="alert alert-warn alert--compact">User has not completed onboarding profile yet.</div>'}
             <form id="edit-user-form">
               <div class="form-grid">
                 <div class="field"><label>Name</label><input name="name" required value="${esc(user.name)}"></div>
@@ -793,9 +796,9 @@ function renderDrawer() {
               </div>` : ''}
               <button class="btn btn-sm" type="submit">Save User Changes</button>
             </form>
-            ${!isSelf ? `<div class="card" style="padding:14px;margin-top:16px;border-color:rgba(220,38,38,0.25)">
-              <div style="font-weight:700;font-size:13px;margin-bottom:10px">Account Controls</div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${!isSelf ? `<div class="card drawer-danger-box">
+              <div class="drawer-danger-title">Account Controls</div>
+              <div class="alert-actions">
                 <button class="btn btn-sec btn-sm" id="toggle-user-disable">${user.disabled ? 'Enable Account' : 'Disable Account'}</button>
                 <button class="btn btn-danger btn-sm" id="delete-user-btn">Delete User</button>
               </div>
@@ -803,35 +806,35 @@ function renderDrawer() {
           ` : ''}
 
           ${utab === 'exercises' ? `
-            ${workouts.length ? workouts.map(w => `<div class="card" style="padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+            ${workouts.length ? `<div class="drawer-item-list">${workouts.map(w => `<div class="drawer-item-card">
               <div><div class="cell-title">${esc(w.title)}</div><div class="cell-sub">${esc(w.category)} · ${w.duration_min}m · ${w.calories} kcal · ${esc(w.date)}</div></div>
               <span class="badge ${w.done ? 'badge-ok' : 'badge-mute'}">${w.done ? 'Done' : 'Planned'}</span>
-            </div>`).join('') : '<div class="empty"><b>No exercises logged</b></div>'}
+            </div>`).join('')}</div>` : '<div class="empty"><b>No exercises logged</b></div>'}
           ` : ''}
 
           ${utab === 'diet' ? `
-            <h3 style="margin:0 0 8px;font-size:13.5px">Custom Food Logs</h3>
-            ${foodLogs.length ? foodLogs.map(l => `<div class="card" style="padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+            <h3 class="drawer-subhead drawer-subhead--first">Custom Food Logs</h3>
+            ${foodLogs.length ? `<div class="drawer-item-list">${foodLogs.map(l => `<div class="drawer-item-card">
               <div><div class="cell-title">${esc(l.title)}</div><div class="cell-sub">${esc(l.slot)} · ${Math.round(l.kcal)} kcal · ${esc(l.date)}</div></div>
-            </div>`).join('') : '<div class="mute" style="margin-bottom:14px">No custom food logs.</div>'}
-            <h3 style="margin:12px 0 8px;font-size:13.5px">7-Day Plan Adjustments</h3>
-            ${plans.length ? plans.map(p => `<div class="card" style="padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+            </div>`).join('')}</div>` : '<div class="mute alert--compact">No custom food logs.</div>'}
+            <h3 class="drawer-subhead">7-Day Plan Adjustments</h3>
+            ${plans.length ? `<div class="drawer-item-list">${plans.map(p => `<div class="drawer-item-card">
               <span class="mono">${esc(p.date)}</span>
               <span>${p.adjusted_kcal ? `<b>${p.adjusted_kcal} kcal</b> (${p.adjustment_delta > 0 ? '+' : ''}${p.adjustment_delta})` : 'Base target'}</span>
-            </div>`).join('') : '<div class="mute">No generated plans yet.</div>'}
+            </div>`).join('')}</div>` : '<div class="mute">No generated plans yet.</div>'}
           ` : ''}
 
           ${utab === 'study_goals' ? `
-            <h3 style="margin:0 0 8px;font-size:13.5px">Study Sessions (${studySessions.length})</h3>
-            ${studySessions.map(s => `<div class="card" style="padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between">
+            <h3 class="drawer-subhead drawer-subhead--first">Study Sessions (${studySessions.length})</h3>
+            ${studySessions.length ? `<div class="drawer-item-list">${studySessions.map(s => `<div class="drawer-item-card">
               <div><b>${esc(s.title)}</b><div class="cell-sub">${esc(s.subject)} · ${s.duration_min}m · ${esc(s.date)}</div></div>
               <span class="badge ${s.done ? 'badge-ok' : 'badge-mute'}">${s.done ? 'Done' : 'Open'}</span>
-            </div>`).join('') || '<div class="mute" style="margin-bottom:12px">No study sessions.</div>'}
-            <h3 style="margin:12px 0 8px;font-size:13.5px">Daily Goals (${goals.length})</h3>
-            ${goals.map(g => `<div class="card" style="padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between">
+            </div>`).join('')}</div>` : '<div class="mute alert--compact">No study sessions.</div>'}
+            <h3 class="drawer-subhead">Daily Goals (${goals.length})</h3>
+            ${goals.length ? `<div class="drawer-item-list">${goals.map(g => `<div class="drawer-item-card">
               <div><b>${esc(g.title)}</b><div class="cell-sub">${esc(g.category)} · ${esc(g.priority)} · ${esc(g.date)}</div></div>
               <span class="badge ${g.done ? 'badge-ok' : 'badge-mute'}">${g.done ? 'Done' : 'Open'}</span>
-            </div>`).join('') || '<div class="mute">No goals logged.</div>'}
+            </div>`).join('')}</div>` : '<div class="mute">No goals logged.</div>'}
           ` : ''}
         </div>
         <div class="drawer-foot">
@@ -855,7 +858,7 @@ function renderModal() {
         </div>
         <form id="verify-form">
           <div class="modal-body">
-            <p style="margin:0 0 14px;color:var(--ink-2)">Signing off: <b>${esc(m.title)}</b></p>
+            <p class="modal-copy">Signing off: <b>${esc(m.title)}</b></p>
             <div class="field"><label>Reviewed By (Doctor / Dietitian Name)</label><input name="reviewed_by" required placeholder="e.g. Dr. Ananya Sharma, RD" autofocus></div>
             <div class="field"><label>Source</label><input name="source_name" required value="${esc(m.source_name || '')}"></div>
             <div class="field"><label>Source URL (optional)</label><input name="source_url" value="${esc(m.source_url || '')}"></div>
@@ -875,7 +878,7 @@ function renderModal() {
           <h2>${esc(m.title)}</h2>
           <button class="icon-btn" id="close-modal">${ICONS.close}</button>
         </div>
-        <div class="modal-body"><p style="margin:0;color:var(--ink-2)">${esc(m.body)}</p></div>
+        <div class="modal-body"><p class="modal-copy modal-copy--last">${esc(m.body)}</p></div>
         <div class="modal-foot">
           <button type="button" class="btn btn-sec" id="cancel-modal">Cancel</button>
           <button type="button" class="btn btn-danger" id="confirm-ok">${esc(m.okText || 'Delete')}</button>
@@ -946,11 +949,9 @@ function render() {
     <div class="sb-backdrop ${S.sidebarOpen ? 'open' : ''}" id="sb-backdrop"></div>
     <aside class="sidebar ${S.sidebarOpen ? 'open' : ''}">
       <div class="sb-head">
-        <img class="sb-logo" src="assets/logo.jpg" alt="DailyPilot">
-        <div>
-          <div class="sb-title">DailyPilot</div>
-          <span class="sb-badge">Admin</span>
-        </div>
+        <span class="sb-logo-mark" aria-hidden="true">${ICONS.logo}</span>
+        <div class="sb-title">DailyPilot</div>
+        <span class="sb-badge">Admin</span>
       </div>
       <nav class="sb-nav">
         ${nav.map(g => `<div class="sb-group">${g.group}</div>${g.items.map(([k, label, icon, badge]) => `
@@ -966,9 +967,9 @@ function render() {
             <div class="sb-user-role">${esc(S.me?.email || 'Administrator')}</div>
           </div>
         </div>
-        <div style="display:flex;gap:8px">
-          <a href="/" class="btn btn-sec btn-sm" style="flex:1;text-align:center">User App</a>
-          <button class="btn btn-sec btn-sm" id="logout-btn" style="flex:1">Logout</button>
+        <div class="sb-foot-actions">
+          <a href="/" class="btn btn-sec btn-sm">User App</a>
+          <button class="btn btn-sec btn-sm" id="logout-btn">Logout</button>
         </div>
       </div>
     </aside>
@@ -1029,14 +1030,12 @@ function bindEvents() {
     S.token = null; S.me = null; localStorage.removeItem('dp_admin_token'); render();
   };
 
-  // Dashboard quick links
   if (g('go-review-meals')) g('go-review-meals').onclick = () => { S.filters.meals.status = 'needs_review'; loadTab('meals'); };
   if (g('go-review-tips')) g('go-review-tips').onclick = () => { S.filters.tips.status = 'needs_review'; loadTab('tips'); };
   if (g('go-pillars')) g('go-pillars').onclick = () => loadTab('pillars');
   if (g('go-users')) g('go-users').onclick = () => loadTab('users');
 
   const focusEnd = id => { const el = g(id); if (el) { el.focus(); const n = el.value.length; el.setSelectionRange(n, n); } };
-  // Meals filters & actions
   if (g('q-meals')) g('q-meals').oninput = e => { S.filters.meals.q = e.target.value; render(); focusEnd('q-meals'); };
   if (g('f-meal-slot')) g('f-meal-slot').onchange = e => { S.filters.meals.slot = e.target.value; render(); };
   if (g('f-meal-diet')) g('f-meal-diet').onchange = e => { S.filters.meals.diet = e.target.value; render(); };
@@ -1063,7 +1062,6 @@ function bindEvents() {
     render();
   });
 
-  // Foods filters & actions
   if (g('q-foods')) g('q-foods').oninput = e => { S.filters.foods.q = e.target.value; render(); focusEnd('q-foods'); };
   if (g('new-food')) g('new-food').onclick = () => { S.drawer = { type: 'food', err: '', data: { name: '', source_name: '', source_url: '' } }; render(); };
   document.querySelectorAll('[data-edit-food]').forEach(b => b.onclick = () => {
@@ -1079,7 +1077,6 @@ function bindEvents() {
     render();
   });
 
-  // Tips filters & actions
   if (g('q-tips')) g('q-tips').oninput = e => { S.filters.tips.q = e.target.value; render(); focusEnd('q-tips'); };
   if (g('f-tip-status')) g('f-tip-status').onchange = e => { S.filters.tips.status = e.target.value; render(); };
   if (g('new-tip')) g('new-tip').onclick = () => { S.drawer = { type: 'tip', err: '', data: { title: '', body: '', status: 'draft', source_name: '', source_url: '', reviewed_by: '' } }; render(); };
@@ -1101,7 +1098,6 @@ function bindEvents() {
     render();
   });
 
-  // Users filters & actions
   if (g('q-users')) g('q-users').oninput = e => { S.filters.users.q = e.target.value; render(); focusEnd('q-users'); };
   if (g('f-user-role')) g('f-user-role').onchange = e => { S.filters.users.role = e.target.value; render(); };
   if (g('f-user-goal')) g('f-user-goal').onchange = e => { S.filters.users.goal = e.target.value; render(); };
@@ -1115,7 +1111,6 @@ function bindEvents() {
   });
   document.querySelectorAll('[data-utab]').forEach(b => b.onclick = () => { if (S.drawer) { S.drawer.utab = b.dataset.utab; render(); } });
 
-  // Pillars tabs & moderation delete
   document.querySelectorAll('[data-ptab]').forEach(b => b.onclick = () => { S.pillarTab = b.dataset.ptab; render(); });
   document.querySelectorAll('[data-del-act]').forEach(b => b.onclick = async () => {
     const [kind, id] = b.dataset.delAct.split(':');
@@ -1123,7 +1118,6 @@ function bindEvents() {
     catch (err) { toast(err.message, 'err'); }
   });
 
-  // Settings password form
   if (g('pw-form')) g('pw-form').onsubmit = async e => {
     e.preventDefault();
     try {
@@ -1133,7 +1127,6 @@ function bindEvents() {
     } catch (err) { toast(err.message, 'err'); }
   };
 
-  // Drawer bindings
   const closeDrawer = () => { S.drawer = null; render(); };
   if (g('close-drawer')) g('close-drawer').onclick = closeDrawer;
   if (g('cancel-drawer')) g('cancel-drawer').onclick = closeDrawer;
@@ -1280,7 +1273,6 @@ function bindEvents() {
     render();
   };
 
-  // Modal bindings
   const closeModal = () => { S.modal = null; render(); };
   if (g('close-modal')) g('close-modal').onclick = closeModal;
   if (g('cancel-modal')) g('cancel-modal').onclick = closeModal;

@@ -1,11 +1,12 @@
 import { S, IC, esc, localDate, matchesSearch, searchBarView } from '../state.js';
 import { api, loadData } from '../api.js';
+import { healthSubNav } from './fitness.page.js';
 
 const TYPES = [
-  { id: 'run', label: 'Run', met: 9.8, color: '#fc4c02' },
-  { id: 'walk', label: 'Walk', met: 3.8, color: '#059669' },
-  { id: 'ride', label: 'Ride', met: 7.5, color: '#0284c7' },
-  { id: 'hike', label: 'Hike', met: 6.0, color: '#d97706' },
+  { id: 'run', label: 'Run', met: 9.8, color: '#D97706', icCls: 'ic-goals' },
+  { id: 'walk', label: 'Walk', met: 3.8, color: '#16A34A', icCls: 'ic-fit' },
+  { id: 'ride', label: 'Ride', met: 7.5, color: '#4F46E5', icCls: 'ic-brand' },
+  { id: 'hike', label: 'Hike', met: 6.0, color: '#7C3AED', icCls: 'ic-study' },
 ];
 
 const TYPE_MAP = Object.fromEntries(TYPES.map(t => [t.id, t]));
@@ -53,7 +54,7 @@ function livePaceSecKm() {
   return tr.elapsedSec / (tr.distanceM / 1000);
 }
 
-function svgFallbackRoute(el, points, color = '#fc4c02') {
+function svgFallbackRoute(el, points, color = '#4F46E5') {
   if (!el) return;
   if (!points || points.length < 2) {
     el.innerHTML = `<div class="act-map-empty"><span>${points?.length === 1 ? 'GPS locked — start moving to draw route' : 'Start GPS or Simulate Route to see live map'}</span></div>`;
@@ -75,9 +76,9 @@ function svgFallbackRoute(el, points, color = '#fc4c02') {
   const [ex, ey] = coords[coords.length - 1].split(',');
   el.innerHTML = `
     <svg viewBox="0 0 ${w} ${h}" class="act-svg-map" preserveAspectRatio="xMidYMid meet">
-      <rect width="${w}" height="${h}" rx="12" fill="#f1f5f9"/>
+      <rect width="${w}" height="${h}" rx="10" fill="#F4F4F5"/>
       <polyline fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="${coords.join(' ')}"/>
-      <circle cx="${sx}" cy="${sy}" r="5.5" fill="#10b981" stroke="#fff" stroke-width="2"/>
+      <circle cx="${sx}" cy="${sy}" r="5.5" fill="#16A34A" stroke="#fff" stroke-width="2"/>
       <circle cx="${ex}" cy="${ey}" r="5.5" fill="${color}" stroke="#fff" stroke-width="2"/>
     </svg>`;
 }
@@ -132,7 +133,7 @@ function renderLeafletRoute(containerId, points, color, isLive) {
   detailMap = window.L.map(el, { zoomControl: true, attributionControl: false }).setView(latlngs[0], 15);
   window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(detailMap);
   const poly = window.L.polyline(latlngs, { color, weight: 4, opacity: 0.92 }).addTo(detailMap);
-  window.L.circleMarker(latlngs[0], { radius: 6, color: '#fff', weight: 2, fillColor: '#10b981', fillOpacity: 1 }).addTo(detailMap);
+  window.L.circleMarker(latlngs[0], { radius: 6, color: '#fff', weight: 2, fillColor: '#16A34A', fillOpacity: 1 }).addTo(detailMap);
   window.L.circleMarker(latlngs[latlngs.length - 1], { radius: 6, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1 }).addTo(detailMap);
   if (latlngs.length > 1) detailMap.fitBounds(poly.getBounds(), { padding: [22, 22] });
 }
@@ -150,28 +151,29 @@ export function activityPage() {
   );
 
   const selected = all.find(a => a.id === S.selectedActivityId) || filtered[0] || null;
-  const selColor = selected ? (TYPE_MAP[selected.type]?.color || '#fc4c02') : '#fc4c02';
 
   return `
+    ${healthSubNav()}
+
     <div class="page-head">
       <div><div class="mute">Health &amp; Fitness · GPS</div><h1>Activity Tracker</h1></div>
-      <span class="tag" style="background:rgba(252,76,2,0.12);color:#fc4c02">${all.length} Logged</span>
+      <span class="home-date-pill">${all.length} Logged</span>
     </div>
 
-    <div class="fit-summary-bar" style="background:linear-gradient(135deg,#0f172a,#1e293b);margin-bottom:14px">
-      <div><b>${totalDistKm} km</b><span>Total Distance</span></div>
-      <div><b>${all.length}</b><span>Activities</span></div>
-      <div><b>${fmtDuration(totalSec)}</b><span>Moving Time</span></div>
+    <div class="dp-section grid3">
+      <div class="stat-card"><b>${totalDistKm} km</b><span>Total Distance</span></div>
+      <div class="stat-card"><b>${all.length}</b><span>Activities</span></div>
+      <div class="stat-card"><b>${fmtDuration(totalSec)}</b><span>Moving Time</span></div>
     </div>
 
-    <div class="card act-recorder-card">
+    <div class="dp-section card">
       <div class="act-rec-head">
         <div>
-          <div style="font-weight:800;font-size:15px">Live GPS Recorder</div>
-          <div class="mute" id="actGpsStatus" style="font-size:12px">${esc(tr.gpsStatus)}</div>
+          <h3>Live GPS Recorder</h3>
+          <div class="mute" id="actGpsStatus">${esc(tr.gpsStatus)}</div>
         </div>
-        <div class="dp-pills">
-          ${TYPES.map(t => `<button class="dp-pill ${tr.type === t.id ? 'on' : ''}" data-acttype="${t.id}" ${tr.status !== 'idle' ? 'disabled' : ''}>${t.label}</button>`).join('')}
+        <div class="dp-seg dp-seg--inline" role="tablist" aria-label="Activity type">
+          ${TYPES.map(t => `<button type="button" class="dp-seg-btn ${tr.type === t.id ? 'on' : ''}" data-acttype="${t.id}" ${tr.status !== 'idle' ? 'disabled' : ''}>${t.label}</button>`).join('')}
         </div>
       </div>
 
@@ -184,31 +186,31 @@ export function activityPage() {
         <div class="act-metric"><small>Calories</small><b id="actKcal">${estCalories(tr.type, tr.elapsedSec)} kcal</b></div>
       </div>
 
-      <input id="actTitleIn" value="${esc(tr.title)}" placeholder="Activity title (e.g. Morning ${activeType.label})" style="margin-bottom:10px">
+      <input id="actTitleIn" class="act-title-in" value="${esc(tr.title)}" placeholder="Activity title (e.g. Morning ${activeType.label})">
 
       <div class="act-controls">
         ${tr.status === 'idle' ? `
-          <button class="btn" id="actStartBtn" style="margin-top:0;background:${activeType.color}">Start ${activeType.label}</button>
-          <button class="btn sec" id="actSimBtn" style="margin-top:0" title="Test live GPS tracking with a simulated park route">Simulate Route</button>
+          <button type="button" class="btn" id="actStartBtn">Start ${activeType.label}</button>
+          <button type="button" class="btn sec" id="actSimBtn" title="Test live GPS tracking with a simulated park route">Simulate Route</button>
         ` : `
-          <button class="btn sec" id="actPauseBtn" style="margin-top:0">${tr.status === 'paused' ? 'Resume' : 'Pause'}</button>
-          <button class="btn" id="actFinishBtn" style="margin-top:0;background:#059669">Finish &amp; Save</button>
-          <button class="btn sec" id="actDiscardBtn" style="margin-top:0;color:var(--err)">Discard</button>
+          <button type="button" class="btn sec" id="actPauseBtn">${tr.status === 'paused' ? 'Resume' : 'Pause'}</button>
+          <button type="button" class="btn success" id="actFinishBtn">Finish &amp; Save</button>
+          <button type="button" class="btn sec dp-text-danger" id="actDiscardBtn">Discard</button>
         `}
       </div>
     </div>
 
     ${selected ? `
-    <div class="card" style="margin-top:14px;border-left:4px solid ${selColor}">
-      <div class="sec-head" style="margin:0 0 8px">
+    <div class="dp-section card">
+      <div class="sec-head">
         <div>
-          <div style="font-weight:800;font-size:15px">${esc(selected.title)}</div>
-          <div class="mute" style="font-size:12px">${esc(selected.date)} · ${esc((TYPE_MAP[selected.type]?.label) || selected.type)}</div>
+          <h3>${esc(selected.title)}</h3>
+          <div class="mute">${esc(selected.date)} · ${esc((TYPE_MAP[selected.type]?.label) || selected.type)}</div>
         </div>
-        <button class="del-btn" data-delact="${selected.id}" title="Delete activity">${IC.trash}</button>
+        <button type="button" class="del-btn del-btn--danger" data-delact="${selected.id}" title="Delete activity" aria-label="Delete activity">${IC.trash}</button>
       </div>
       <div id="activityDetailMap" class="act-map-box act-map-sm"></div>
-      <div class="act-metrics-grid" style="margin-top:10px;margin-bottom:0">
+      <div class="act-metrics-grid act-metrics-grid--compact">
         <div class="act-metric"><small>Distance</small><b>${((selected.distance_m || 0) / 1000).toFixed(2)} km</b></div>
         <div class="act-metric"><small>Time</small><b>${fmtDuration(selected.duration_sec)}</b></div>
         <div class="act-metric"><small>${selected.type === 'ride' ? 'Speed' : 'Pace'}</small><b>${fmtPace(selected.avg_pace_sec_km, selected.type)}</b></div>
@@ -218,32 +220,33 @@ export function activityPage() {
 
     <div class="sec-head">
       <h2>Activity History</h2>
-      <div class="dp-pills">
+      <div class="dp-seg dp-seg--inline" role="tablist" aria-label="Filter activities">
         ${[['all', 'All'], ...TYPES.map(t => [t.id, t.label])].map(([id, lbl]) => `
-          <button class="dp-pill ${S.activityFilter === id ? 'on' : ''}" data-actfilter="${id}">${lbl}</button>
+          <button type="button" class="dp-seg-btn ${S.activityFilter === id ? 'on' : ''}" data-actfilter="${id}">${lbl}</button>
         `).join('')}
       </div>
     </div>
+
     ${searchBarView('Search activities…')}
 
     <div class="list-stack">
       ${filtered.length ? filtered.map(a => {
         const meta = TYPE_MAP[a.type] || TYPES[0];
         const isSel = selected && selected.id === a.id;
-        return `<div class="wo-card ${isSel ? 'act-selected' : ''}" data-selact="${a.id}" style="cursor:pointer;border-left:4px solid ${meta.color}">
-          <div class="wo-badge" style="background:${meta.color}18;color:${meta.color}">${IC.route}</div>
-          <div style="flex:1;min-width:0">
-            <div class="wo-title">${esc(a.title)}</div>
-            <div class="wo-meta">
-              <span>${meta.label}</span><span>•</span>
-              <span>${((a.distance_m || 0) / 1000).toFixed(2)} km</span><span>•</span>
-              <span>${fmtDuration(a.duration_sec)}</span><span>•</span>
+        return `<div class="dp-row dp-row--clickable ${isSel ? 'dp-row--selected' : ''}" data-selact="${a.id}">
+          <div class="dp-row-ic ${meta.icCls}">${IC.route}</div>
+          <div class="dp-row-body">
+            <div class="dp-row-title">${esc(a.title)}</div>
+            <div class="dp-row-sub">
+              <span>${meta.label}</span><span>·</span>
+              <span>${((a.distance_m || 0) / 1000).toFixed(2)} km</span><span>·</span>
+              <span>${fmtDuration(a.duration_sec)}</span><span>·</span>
               <span>${fmtPace(a.avg_pace_sec_km, a.type)}</span>
             </div>
           </div>
-          <button class="del-btn" data-delact="${a.id}" title="Delete">${IC.trash}</button>
+          <button type="button" class="del-btn del-btn--danger" data-delact="${a.id}" title="Delete" aria-label="Delete">${IC.trash}</button>
         </div>`;
-      }).join('') : '<div class="card mute" style="text-align:center;padding:22px">No GPS activities recorded yet. Start a run, walk, or ride above!</div>'}
+      }).join('') : '<div class="card dp-empty"><div class="mute">No GPS activities recorded yet. Start a run, walk, or ride above.</div></div>'}
     </div>`;
 }
 
@@ -260,7 +263,7 @@ function updateLiveMetricsDOM() {
   if (kcalEl) kcalEl.textContent = `${estCalories(tr.type, tr.elapsedSec)} kcal`;
   if (statusEl) statusEl.textContent = tr.gpsStatus;
   if (document.getElementById('activityLiveMap')) {
-    renderLeafletRoute('activityLiveMap', tr.points, TYPE_MAP[tr.type]?.color || '#fc4c02', true);
+    renderLeafletRoute('activityLiveMap', tr.points, TYPE_MAP[tr.type]?.color || '#4F46E5', true);
   }
 }
 
@@ -269,7 +272,7 @@ function pushPoint(pt) {
   const prev = tr.points[tr.points.length - 1];
   if (prev) {
     const d = haversineMeters(prev, pt);
-    if (d < 2) return; // ignore GPS jitter < 2m
+    if (d < 2) return;
     tr.distanceM += d;
     if (pt.alt != null && prev.alt != null && pt.alt > prev.alt) {
       tr.elevationGainM += pt.alt - prev.alt;
@@ -348,7 +351,7 @@ function startTimers(simulate = false) {
 export function bindActivity(render) {
   const tr = S.tracker;
 
-  renderLeafletRoute('activityLiveMap', tr.points, TYPE_MAP[tr.type]?.color || '#fc4c02', true);
+  renderLeafletRoute('activityLiveMap', tr.points, TYPE_MAP[tr.type]?.color || '#4F46E5', true);
 
   const all = S.activities || [];
   const filtered = all.filter(a =>
@@ -357,7 +360,7 @@ export function bindActivity(render) {
   );
   const selected = all.find(a => a.id === S.selectedActivityId) || filtered[0] || null;
   if (selected && document.getElementById('activityDetailMap')) {
-    renderLeafletRoute('activityDetailMap', selected.points || [], TYPE_MAP[selected.type]?.color || '#fc4c02', false);
+    renderLeafletRoute('activityDetailMap', selected.points || [], TYPE_MAP[selected.type]?.color || '#4F46E5', false);
   }
 
   const titleIn = document.getElementById('actTitleIn');

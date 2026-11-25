@@ -1,129 +1,195 @@
 import { S, IC, WEEKDAYS, esc, localDate, pct, matchesSearch, searchBarView } from '../state.js';
 
+function sparkSvg(pctVal) {
+  const h = 44;
+  const barH = Math.max(4, Math.round((Math.min(100, Math.max(0, pctVal)) / 100) * h));
+  return `<svg class="dp-spark-svg dp-spark-svg--sm" viewBox="0 0 24 ${h}" aria-hidden="true">
+    <rect class="dp-spark-rect" x="0" y="${h - barH}" width="24" height="${barH}" rx="4"/>
+  </svg>`;
+}
+
+export function healthSubNav() {
+  const r = S.route;
+  const isHealth = r === '/health' || r === '/fitness';
+  const isDiet = r === '/health/diet' || r === '/fitness/diet';
+  const isAct = r === '/health/activity';
+  return `<div class="dp-subnav">
+    <div class="dp-seg" role="tablist" aria-label="Health sections">
+      <button type="button" class="dp-seg-btn ${isHealth ? 'on' : ''}" data-go="/health">Summary</button>
+      <button type="button" class="dp-seg-btn ${isDiet ? 'on' : ''}" data-go="/health/diet">7-Day Diet</button>
+      <button type="button" class="dp-seg-btn ${isAct ? 'on' : ''}" data-go="/health/activity">Activity</button>
+    </div>
+  </div>`;
+}
+
 export function healthOverviewPage() {
   const t = S.plan?.targets || S.targets || { calories: 2250, protein: 140, carbs: 250, fat: 72, stepsGoal: 9000, waterL: 3.2, bmi: 22.5, bmiCategory: 'Normal' };
   const e = S.plan?.totals?.eaten || { kcal: 0, protein: 0, carbs: 0, fat: 0 };
   const todaySteps = (S.progress?.steps?.find(s => s.date === localDate()) || {}).steps || 0;
   const kcalPct = pct(e.kcal, t.calories);
   const remainKcal = Math.max(0, Math.round(t.calories - e.kcal));
-  const circ = 2 * Math.PI * 42;
-  const dashOffset = circ - (circ * kcalPct) / 100;
+  const r = 26, circ = 2 * Math.PI * r;
+  const dashOffset = circ * (1 - kcalPct / 100);
   const waterGoalMl = Math.round((t.waterL || 3.2) * 1000);
   const goalLbl = { lose: 'Slim / Fat Loss', fit: 'Stay Fit', bulk: 'Bulking' }[S.profile?.goal || 'fit'];
   const dietLbl = { veg: 'Veg Only', nonveg: 'Non-Veg', both: 'Both' }[S.profile?.diet_pref || 'both'];
   const slots = S.plan?.slots || [];
 
   return `
+    ${healthSubNav()}
+
     <div class="page-head">
       <div><div class="mute">Health &amp; Nutrition</div><h1>Daily Health</h1></div>
-      <button class="tag fit" data-go="/profile/edit" style="border:0;cursor:pointer;padding:5px 11px">${goalLbl} · ${dietLbl} · Edit</button>
+      <button type="button" class="tag fit tag--clickable" data-go="/profile/edit">${goalLbl} · ${dietLbl} · Edit</button>
     </div>
 
     <div class="home-grid">
-      <div>
-        <div class="fit-hero" style="margin-top:0">
-          <div class="fit-hero-top">
-            <div class="fit-ring-wrap">
-              <svg viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="9"/>
-                <circle cx="50" cy="50" r="42" fill="none" stroke="#10b981" stroke-width="9" stroke-linecap="round"
+      <div class="dp-col-stack">
+        <div class="hero-flat-card">
+          <div class="hero-top-row">
+            <div class="hero-greet">Profile Nutrition Target</div>
+            <span class="home-date-pill">${t.bmi ? `BMI ${t.bmi} · ${t.bmiCategory}` : goalLbl}</span>
+          </div>
+          <div class="hero-main-row">
+            <div>
+              <div class="hero-pct">${remainKcal} kcal left</div>
+              <div class="hero-sub">${Math.round(e.kcal)} of ${t.calories} kcal eaten</div>
+            </div>
+            <div class="dp-ring">
+              <svg viewBox="0 0 64 64">
+                <circle class="dp-ring-track" cx="32" cy="32" r="${r}"/>
+                <circle class="dp-ring-arc dp-ring-arc--green" cx="32" cy="32" r="${r}"
                   stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${dashOffset.toFixed(1)}"/>
               </svg>
-              <div class="fit-ring-center"><b>${Math.round(e.kcal)}</b><span>of ${t.calories}</span></div>
-            </div>
-            <div style="flex:1">
-              <div style="font-size:12px;color:rgba(255,255,255,0.78);font-weight:600">Profile Nutrition Target</div>
-              <div style="font-size:21px;font-weight:800;margin:2px 0">${remainKcal} kcal left</div>
-              <div style="font-size:12px;color:#6ee7b7;font-weight:600">${t.bmi ? `BMI ${t.bmi} (${t.bmiCategory})` : goalLbl}</div>
+              <div class="dp-ring-label">${kcalPct}%</div>
             </div>
           </div>
-          <div class="fit-macros">
-            <div class="fit-macro-item"><small>Protein</small><b>${Math.round(e.protein)}/${t.protein}g</b><div class="fit-macro-bar"><i style="width:${pct(e.protein, t.protein)}%;background:#10b981"></i></div></div>
-            <div class="fit-macro-item"><small>Carbs</small><b>${Math.round(e.carbs)}/${t.carbs}g</b><div class="fit-macro-bar"><i style="width:${pct(e.carbs, t.carbs)}%;background:#38bdf8"></i></div></div>
-            <div class="fit-macro-item"><small>Fat</small><b>${Math.round(e.fat)}/${t.fat}g</b><div class="fit-macro-bar"><i style="width:${pct(e.fat, t.fat)}%;background:#fbbf24"></i></div></div>
+          <div class="dp-macro-grid">
+            <div class="dp-macro-item">
+              <small>Protein</small>
+              <b>${Math.round(e.protein)}/${t.protein}g</b>
+              <progress class="dp-progress dp-progress--fit" value="${pct(e.protein, t.protein)}" max="100"></progress>
+            </div>
+            <div class="dp-macro-item">
+              <small>Carbs</small>
+              <b>${Math.round(e.carbs)}/${t.carbs}g</b>
+              <progress class="dp-progress dp-progress--brand" value="${pct(e.carbs, t.carbs)}" max="100"></progress>
+            </div>
+            <div class="dp-macro-item">
+              <small>Fat</small>
+              <b>${Math.round(e.fat)}/${t.fat}g</b>
+              <progress class="dp-progress dp-progress--goals" value="${pct(e.fat, t.fat)}" max="100"></progress>
+            </div>
           </div>
         </div>
 
         <div class="bento-2">
-          <div class="bento-card" style="border-top:3px solid var(--goals)">
-            <div class="bento-head"><span class="bento-ic" style="background:var(--goals-soft);color:var(--goals)">${IC.steps}</span><button class="link" id="toggleEditSteps" style="font-size:12px">${S.editingSteps ? 'Done' : 'Edit'}</button></div>
-            <div><div class="bento-val">${Number(todaySteps).toLocaleString()}</div><div class="bento-sub">of ${t.stepsGoal.toLocaleString()} steps</div><div class="bar" style="margin:8px 0 0"><i style="width:${pct(todaySteps, t.stepsGoal)}%;background:var(--goals-grad)"></i></div></div>
-            ${S.editingSteps ? `<div class="steps" style="margin-top:8px"><input id="stepsIn" type="number" value="${todaySteps}" style="padding:7px 9px;font-size:13px"><button class="btn sm" id="saveSteps">Save</button></div>` : `<button class="mini-action" id="add500Steps">+ 500 steps</button>`}
+          <div class="bento-card">
+            <div class="bento-head">
+              <span class="dp-row-ic ic-goals">${IC.steps}</span>
+              <button type="button" class="link" id="toggleEditSteps">${S.editingSteps ? 'Done' : 'Edit'}</button>
+            </div>
+            <div>
+              <div class="bento-val">${Number(todaySteps).toLocaleString()}</div>
+              <div class="bento-sub">of ${t.stepsGoal.toLocaleString()} steps</div>
+              <div class="dp-prog-wrap"><progress class="dp-progress dp-progress--goals" value="${pct(todaySteps, t.stepsGoal)}" max="100"></progress></div>
+            </div>
+            ${S.editingSteps
+      ? `<div class="steps-edit"><input id="stepsIn" type="number" value="${todaySteps}"><button type="button" class="btn sm" id="saveSteps">Save</button></div>`
+      : `<button type="button" class="btn sec sm btn--flush" id="add500Steps">+ 500 steps</button>`}
           </div>
-          <div class="bento-card" style="border-top:3px solid var(--water)">
-            <div class="bento-head"><span class="bento-ic" style="background:var(--water-soft);color:var(--water)">${IC.drop}</span><span class="bento-sub">${pct(S.waterMl, waterGoalMl)}%</span></div>
-            <div><div class="bento-val">${(S.waterMl / 1000).toFixed(2).replace(/\.00$/, '.0')} L</div><div class="bento-sub">of ${(waterGoalMl / 1000).toFixed(1)} L water</div><div class="bar" style="margin:8px 0 0"><i style="width:${pct(S.waterMl, waterGoalMl)}%;background:var(--water)"></i></div></div>
-            <div style="display:flex;gap:6px">
-              <button class="mini-action" id="addWater" style="flex:1">+ 250 ml</button>
-              ${S.waterMl > 0 ? `<button class="mini-action" id="subWater" title="Undo 250 ml">−250</button>` : ''}
+
+          <div class="bento-card">
+            <div class="bento-head">
+              <span class="dp-row-ic ic-brand">${IC.drop}</span>
+              <span class="bento-sub dp-num">${pct(S.waterMl, waterGoalMl)}%</span>
+            </div>
+            <div>
+              <div class="bento-val">${(S.waterMl / 1000).toFixed(2).replace(/\.00$/, '.0')} L</div>
+              <div class="bento-sub">of ${(waterGoalMl / 1000).toFixed(1)} L water</div>
+              <div class="dp-prog-wrap"><progress class="dp-progress" value="${pct(S.waterMl, waterGoalMl)}" max="100"></progress></div>
+            </div>
+            <div class="dp-inline-group">
+              <button type="button" class="btn sec sm btn--flush dp-flex-1" id="addWater">+ 250 ml</button>
+              ${S.waterMl > 0 ? `<button type="button" class="btn sec sm btn--flush" id="subWater" title="Undo 250 ml">−250</button>` : ''}
             </div>
           </div>
         </div>
+
         ${(S.progress?.weights?.length || S.progress?.steps?.length) ? `
-        <div class="card" style="margin-top:12px">
-          <div class="sec-head" style="margin:0 0 8px"><h3>7-Day Steps &amp; Weight</h3><button class="link" data-go="/analytics" style="padding:0">Analytics ›</button></div>
-          ${S.progress?.weights?.length ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:10px;background:var(--bg);margin-bottom:10px">
-            <div><div class="mute" style="font-size:11px">Latest Weight</div><b>${S.progress.weights[S.progress.weights.length - 1].kg} kg</b></div>
-            <div style="text-align:right"><div class="mute" style="font-size:11px">Trend (${S.progress.weights.length} logs)</div><b>${(() => { const w = S.progress.weights; if (w.length < 2) return 'Baseline'; const diff = +(w[w.length - 1].kg - w[0].kg).toFixed(1); return `${diff > 0 ? '+' : ''}${diff} kg`; })()}</b></div>
+        <div class="card">
+          <div class="sec-head">
+            <h3>7-Day Steps &amp; Weight</h3>
+            <button type="button" class="link" data-go="/analytics">Analytics ›</button>
+          </div>
+          ${S.progress?.weights?.length ? `<div class="dp-weight-row">
+            <div><div class="dp-caption">Latest Weight</div><b>${S.progress.weights[S.progress.weights.length - 1].kg} kg</b></div>
+            <div class="dp-text-right"><div class="dp-caption">Trend (${S.progress.weights.length} logs)</div><b>${(() => { const w = S.progress.weights; if (w.length < 2) return 'Baseline'; const diff = +(w[w.length - 1].kg - w[0].kg).toFixed(1); return `${diff > 0 ? '+' : ''}${diff} kg`; })()}</b></div>
           </div>` : ''}
-          ${S.progress?.steps?.length ? `<div class="spark" style="height:78px">
+          ${S.progress?.steps?.length ? `<div class="spark">
             ${S.progress.steps.slice(-7).map(st => `<div class="spark-col ${st.date === localDate() ? 'today' : ''}">
-              <span class="spark-val" style="font-size:9px">${st.steps >= 1000 ? (st.steps / 1000).toFixed(1) + 'k' : st.steps}</span>
-              <div class="spark-bar" style="height:${Math.max(8, Math.round(pct(st.steps, t.stepsGoal) * 0.45))}px"></div>
+              <span class="spark-val">${st.steps >= 1000 ? (st.steps / 1000).toFixed(1) + 'k' : st.steps}</span>
+              ${sparkSvg(pct(st.steps, t.stepsGoal))}
               <span class="spark-lbl">${st.date.slice(8)}</span>
             </div>`).join('')}
           </div>` : ''}
         </div>` : ''}
+
         ${S.profile?.skin_care && S.plan?.tips?.length ? `
-        <div class="card" style="margin-top:12px;border-left:4px solid var(--fit)">
-          <div class="sec-head" style="margin:0 0 6px"><h3>Skin-Care Tips</h3><span class="tag fit">Active</span></div>
-          ${S.plan.tips.slice(0, 3).map(tip => `<div style="margin-top:8px">
-            <div style="font-weight:700;font-size:13px">${esc(tip.title)}</div>
-            <div class="mute" style="font-size:12px">${esc(tip.body)}</div>
+        <div class="card">
+          <div class="sec-head"><h3>Skin-Care Tips</h3><span class="tag fit">Active</span></div>
+          ${S.plan.tips.slice(0, 3).map(tip => `<div class="dp-tip-item">
+            <div class="dp-tip-title">${esc(tip.title)}</div>
+            <div class="mute">${esc(tip.body)}</div>
           </div>`).join('')}
         </div>` : ''}
       </div>
 
-      <div>
-        <div class="sec-head" style="margin-top:0">
-          <h2>Today's Diet Plan</h2>
-          <div style="display:flex;gap:10px;align-items:center">
-            <button class="link" id="openLogFoodBtn">+ Log Ate</button>
-            <button class="link" data-go="/health/diet">7-Day Plan →</button>
+      <div class="dp-col-stack">
+        <div>
+          <div class="sec-head">
+            <h2>Today's Diet Plan</h2>
+            <div class="dp-inline-group">
+              <button type="button" class="link" id="openLogFoodBtn">+ Log Ate</button>
+              <button type="button" class="link" data-go="/health/diet">7-Day Plan ›</button>
+            </div>
+          </div>
+          <div class="list-stack">
+            ${slots.length ? slots.map(s => {
+    const m = s.meal; if (!m) return '';
+    return `<div class="dp-row ${s.done ? 'done' : ''}">
+                <div class="dp-row-ic ic-fit">${IC.utensils}</div>
+                <div class="dp-row-body">
+                  <div class="dp-row-title">${esc(m.title)}</div>
+                  <div class="dp-row-sub"><span>${s.label} · ${s.time}</span><span>·</span><span>${Math.round(m.kcal)} kcal</span><span>·</span><span>P ${Math.round(m.protein)}g</span></div>
+                </div>
+                <button type="button" class="chk chk--fit ${s.done ? 'on' : ''}" data-mealcheck="${s.slot}" data-done="${s.done ? 0 : 1}" aria-label="Toggle meal">${s.done ? IC.check : ''}</button>
+              </div>`;
+  }).join('') : '<div class="card mute">Open 7-Day Diet to view your meals.</div>'}
           </div>
         </div>
-        ${slots.length ? slots.map(s => {
-    const m = s.meal; if (!m) return '';
-    return `<div class="wo-card accent-fit ${s.done ? 'done' : ''}">
-            <button class="chk ${s.done ? 'on' : ''}" data-mealcheck="${s.slot}" data-done="${s.done ? 0 : 1}">${s.done ? '✓' : ''}</button>
-            <div style="flex:1;min-width:0">
-              <div class="mute" style="font-size:11px;font-weight:700">${s.label} · ${s.time}</div>
-              <div class="wo-title">${esc(m.title)}</div>
-              <div class="wo-meta"><span>${Math.round(m.kcal)} kcal</span><span>•</span><span>P ${Math.round(m.protein)}g</span></div>
+
+        <div class="list-stack">
+          <div class="dp-row dp-row--clickable" data-go="/exercise">
+            <div class="dp-row-ic ic-fit">${IC.dumbbell}</div>
+            <div class="dp-row-body">
+              <div class="dp-row-title">Exercise Panel</div>
+              <div class="dp-row-sub">${S.workouts.filter(w => w.done).length}/${S.workouts.length} workouts done today</div>
             </div>
-          </div>`;
-  }).join('') : '<div class="card mute">Open 7-Day Diet to view your meals.</div>'}
+            <span class="mute">${IC.chevronRight}</span>
+          </div>
 
-        <div class="wo-card accent-fit" data-go="/exercise" style="cursor:pointer;margin-top:12px">
-          <div class="wo-badge" style="background:var(--fit-soft);color:var(--fit)">${IC.dumbbell}</div>
-          <div style="flex:1"><div class="wo-title">Exercise Panel</div><div class="wo-meta">${S.workouts.filter(w => w.done).length}/${S.workouts.length} workouts done today</div></div>
-          <span class="mute">›</span>
-        </div>
-
-        <div class="wo-card" data-go="/health/activity" style="cursor:pointer;margin-top:10px;border-left:4px solid #fc4c02">
-          <div class="wo-badge" style="background:rgba(252,76,2,0.12);color:#fc4c02">${IC.route}</div>
-          <div style="flex:1"><div class="wo-title">GPS Activity Tracker</div><div class="wo-meta">${(S.activities || []).length} recorded runs, walks &amp; rides · Route Map</div></div>
-          <span class="mute">›</span>
+          <div class="dp-row dp-row--clickable" data-go="/health/activity">
+            <div class="dp-row-ic ic-goals">${IC.route}</div>
+            <div class="dp-row-body">
+              <div class="dp-row-title">GPS Activity Tracker</div>
+              <div class="dp-row-sub">${(S.activities || []).length} recorded runs, walks &amp; rides</div>
+            </div>
+            <span class="mute">${IC.chevronRight}</span>
+          </div>
         </div>
       </div>
     </div>`;
-}
-
-function arcIcon(cat) {
-  if (cat === 'Cardio') return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/></svg>`;
-  if (cat === 'HIIT') return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>`;
-  if (cat === 'Mobility') return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" transform="translate(0 2)"/><path d="M4 17c2.5-3 5-4 8-4s5.5 1 8 4"/><path d="M9 13v-3l3-2 3 2v3"/></svg>`;
-  return IC.dumbbell;
 }
 
 export function exercisePage() {
@@ -136,78 +202,56 @@ export function exercisePage() {
   const mins = doneList.reduce((a, b) => a + (b.duration_min || 0), 0);
   const kcal = doneList.reduce((a, b) => a + (b.calories || 0), 0);
 
-  const pos = S.arcPos || { side: 'right', y: null };
-  const isLeft = pos.side === 'left';
-  const posStyle = `${isLeft ? 'left:18px;right:auto;' : 'right:18px;left:auto;'}${pos.y != null ? `top:${pos.y}px;bottom:auto;` : ''}`;
-
   return `
     <div class="page-head">
       <div><div class="mute">Exercise &amp; Training</div><h1>Your Workouts</h1></div>
-      <button class="tag fit" data-go="/profile/edit" style="border:0;cursor:pointer;padding:5px 11px">${goalLbl} · ${activityLbl}</button>
+      <button type="button" class="tag fit tag--clickable" data-go="/profile/edit">${goalLbl} · ${activityLbl}</button>
     </div>
 
-    <div class="fit-summary-bar">
-      <div><b>${doneList.length}/${S.workouts.length}</b><span>Completed</span></div>
-      <div><b>${mins}m</b><span>Active Time</span></div>
-      <div><b>${kcal}</b><span>kcal Burned</span></div>
+    <div class="dp-section grid3">
+      <div class="stat-card"><b>${doneList.length}/${S.workouts.length}</b><span>Completed</span></div>
+      <div class="stat-card"><b>${mins}m</b><span>Active Time</span></div>
+      <div class="stat-card"><b>${kcal}</b><span>kcal Burned</span></div>
     </div>
 
-    <div class="card" style="border-left:4px solid var(--fit);margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div>
-          <div style="font-weight:800;font-size:14px">Recommended for ${goalLbl}</div>
-          <div class="mute" style="font-size:12px">Tap any exercise to add it to today's plan</div>
-        </div>
+    <div class="dp-section card">
+      <div class="sec-head">
+        <h3>Recommended for ${goalLbl}</h3>
+        <span class="dp-caption">Tap to add</span>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="dp-chip-list">
         ${recs.length ? recs.map((r, idx) => `
-          <button class="dp-pill" data-addrec="${idx}" title="${esc(r.reason || '')}" style="display:inline-flex;align-items:center;gap:6px;background:var(--fit-soft);color:var(--fit);border-color:rgba(5,150,105,0.28)">
-            <span>+ ${esc(r.title)}</span><span style="opacity:0.75">(${r.duration_min}m · ${r.calories} kcal)</span>
-          </button>`).join('') : '<span class="mute" style="font-size:12px">Complete your profile to get personalized workout recommendations.</span>'}
+          <button type="button" class="dp-rec-chip" data-addrec="${idx}" title="${esc(r.reason || '')}">
+            <span>+ ${esc(r.title)}</span>
+            <span class="dp-rec-chip-meta">${r.duration_min}m · ${r.calories} kcal</span>
+          </button>`).join('') : '<span class="mute">Complete your profile to get personalized workout recommendations.</span>'}
       </div>
     </div>
 
     ${searchBarView('Search workouts…')}
-    <div class="sec-head" style="margin-top:0">
-      <div class="dp-pills">
-        ${['All', 'Strength', 'Cardio', 'Mobility', 'HIIT'].map(c => `<button class="dp-pill ${S.fitFilter === c ? 'on' : ''}" onclick="document.getElementById('fitFilterSel').value='${c}';document.getElementById('fitFilterSel').dispatchEvent(new Event('change'))">${c}</button>`).join('')}
-      </div>
-      <select class="dp-select" id="fitFilterSel" style="display:none">${['All', 'Strength', 'Cardio', 'Mobility', 'HIIT'].map(c => `<option value="${c}" ${S.fitFilter === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
-      <button class="btn sm" data-openadd="exercise">+ Custom</button>
-    </div>
-    ${workouts.length ? workouts.map(w => `
-      <div class="wo-card accent-fit ${w.done ? 'done' : ''}">
-        <div class="wo-badge" style="background:var(--fit-soft);color:var(--fit)">${IC.dumbbell}</div>
-        <div style="flex:1;min-width:0"><div class="wo-title">${esc(w.title)}</div><div class="wo-meta"><span class="tag fit" style="margin:0">${esc(w.category)}</span><span>${w.duration_min} min</span><span>•</span><span>${w.calories} kcal</span></div></div>
-        <button class="chk ${w.done ? 'on' : ''}" data-toggle="workouts" data-id="${w.id}" data-done="${!w.done}">${w.done ? '✓' : ''}</button>
-        <button class="del-btn" data-edit="workouts" data-id="${w.id}" title="Edit">${IC.edit}</button>
-        <button class="del-btn" data-del="workouts" data-id="${w.id}" title="Delete">${IC.trash}</button>
-      </div>`).join('') : '<div class="card mute" style="text-align:center;padding:24px">No workouts match this filter.</div>'}
 
-    ${S.arcOpen ? `<div class="dp-arc-backdrop" id="arcBackdrop"></div>` : ''}
-    <div class="dp-arc-wrap ${S.arcOpen ? 'open' : ''} ${isLeft ? 'left' : 'right'}" id="arcWrap" style="${posStyle}">
-      ${S.arcOpen && recs.length ? `
-        <div class="dp-arc-oval" aria-hidden="true"></div>
-        ${recs.slice(0, 4).map((r, idx, arr) => {
-    const n = arr.length;
-    const startDeg = isLeft ? -58 : 122;
-    const angleDeg = n === 1 ? (isLeft ? 0 : 180) : startDeg + (idx * (116 / (n - 1)));
-    const rad = (angleDeg * Math.PI) / 180;
-    const rx = 92;
-    const ry = 108;
-    const x = Math.round(Math.cos(rad) * rx);
-    const y = Math.round(-Math.sin(rad) * ry);
-    return `<div class="dp-arc-item" style="--tx:${x}px;--ty:${y}px;--d:${idx * 35}ms">
-            <button class="dp-arc-pill" data-addrec="${idx}" title="${esc(r.reason || '')}">
-              <b>${esc(r.title)}</b><span>${r.duration_min}m · ${r.calories} kcal</span>
-            </button>
-            <button class="dp-arc-dot" data-addrec="${idx}" title="${esc(r.title)}">${arcIcon(r.category)}</button>
-          </div>`;
-  }).join('')}
-      ` : ''}
-      <button class="dp-arc-fab" id="arcFabBtn" aria-expanded="${!!S.arcOpen}" title="Drag to move · Tap for recommendations">
-        <span>+</span>
-      </button>
+    <div class="dp-subbar">
+      <div class="dp-seg dp-seg--inline" role="tablist" aria-label="Workout category">
+        ${['All', 'Strength', 'Cardio', 'Mobility', 'HIIT'].map(c => `<button type="button" class="dp-seg-btn ${S.fitFilter === c ? 'on' : ''}" data-fitfilter="${c}">${c}</button>`).join('')}
+      </div>
+      <select class="dp-select dp-hidden-sel" id="fitFilterSel">${['All', 'Strength', 'Cardio', 'Mobility', 'HIIT'].map(c => `<option value="${c}" ${S.fitFilter === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+      <button type="button" class="btn sm" data-openadd="exercise">+ Custom</button>
+    </div>
+
+    <div class="list-stack">
+      ${workouts.length ? workouts.map(w => `
+        <div class="dp-row ${w.done ? 'done' : ''}">
+          <div class="dp-row-ic ic-fit">${IC.dumbbell}</div>
+          <div class="dp-row-body">
+            <div class="dp-row-title">${esc(w.title)}</div>
+            <div class="dp-row-sub"><span>${esc(w.category)}</span><span>·</span><span>${w.duration_min} min</span><span>·</span><span>${w.calories} kcal</span></div>
+          </div>
+          <div class="dp-row-actions">
+            <button type="button" class="del-btn" data-edit="workouts" data-id="${w.id}" title="Edit" aria-label="Edit">${IC.edit}</button>
+            <button type="button" class="del-btn del-btn--danger" data-del="workouts" data-id="${w.id}" title="Delete" aria-label="Delete">${IC.trash}</button>
+            <button type="button" class="chk chk--fit ${w.done ? 'on' : ''}" data-toggle="workouts" data-id="${w.id}" data-done="${!w.done}" aria-label="Toggle workout">${w.done ? IC.check : ''}</button>
+          </div>
+        </div>`).join('') : '<div class="card dp-empty"><div class="mute">No workouts match this filter.</div></div>'}
     </div>`;
 }
 
@@ -224,23 +268,27 @@ export function healthDietPage() {
   const dayF = selDay?.totals?.projected?.fat ?? daySlots.reduce((a, s) => a + (s.meal?.fat || 0), 0);
   const adj = selDay?.adjustmentDelta || 0;
 
-  return `<div class="sec-head" style="margin-top:0">
-      <button class="tag fit" data-go="/profile/edit" style="border:0;cursor:pointer;padding:5px 11px">Diet: ${curDiet.toUpperCase()} · Edit</button>
-      <div style="display:flex;gap:6px">
-        ${S.selectedDayIdx === 0 ? `<button class="btn sm" id="openLogFoodBtn">+ Log What You Ate</button>` : ''}
-        <button class="bell-btn ${allNotifyOn ? 'on' : ''}" id="notifyAllBtn">${IC.bell} ${allNotifyOn ? 'All On' : 'Notify All'}</button>
+  return `
+    ${healthSubNav()}
+
+    <div class="sec-head">
+      <button type="button" class="tag fit tag--clickable" data-go="/profile/edit">Diet: ${curDiet.toUpperCase()} · Edit</button>
+      <div class="dp-inline-group">
+        ${S.selectedDayIdx === 0 ? `<button type="button" class="btn sm" id="openLogFoodBtn">+ Log What You Ate</button>` : ''}
+        <button type="button" class="bell-btn ${allNotifyOn ? 'on' : ''}" id="notifyAllBtn">${IC.bell} ${allNotifyOn ? 'All On' : 'Notify All'}</button>
       </div>
     </div>
+
     ${S.logFoodOpen && S.selectedDayIdx === 0 ? `
-      <form id="logFoodForm" class="card" style="border-left:4px solid var(--fit);margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <h3 style="margin:0">Log What You Ate Today</h3>
-          <button type="button" class="del-btn" id="closeLogFoodBtn">✕</button>
+      <form id="logFoodForm" class="card dp-section">
+        <div class="dp-modal-head">
+          <h3>Log What You Ate Today</h3>
+          <button type="button" class="del-btn" id="closeLogFoodBtn" aria-label="Close">${IC.x}</button>
         </div>
-        <div class="mute" style="font-size:12px;margin-bottom:8px">The next 6 days will automatically rebalance based on today's intake.</div>
+        <div class="mute dp-modal-desc">The next 6 days will automatically rebalance based on today's intake.</div>
         <div class="row">
-          <div style="flex:2"><label style="margin-top:0">Food / Meal Name</label><input name="title" required placeholder="e.g. Masala Dosa or Pizza"></div>
-          <div><label style="margin-top:0">Meal Slot</label><select name="slot">
+          <div class="dp-col-wide"><label class="dp-label-first">Food / Meal Name</label><input name="title" required placeholder="e.g. Masala Dosa or Pizza"></div>
+          <div><label class="dp-label-first">Meal Slot</label><select name="slot">
             <option value="extra">Extra Snack / Treat</option>
             <option value="breakfast">Replaced Breakfast</option>
             <option value="lunch">Replaced Lunch</option>
@@ -254,56 +302,70 @@ export function healthDietPage() {
           <div><label>Carbs (g)</label><input name="carbs" type="number" min="0" step="0.5" placeholder="55"></div>
           <div><label>Fat (g)</label><input name="fat" type="number" min="0" step="0.5" placeholder="16"></div>
         </div>
-        <button class="btn dp-btn-grad" type="submit">Save &amp; Update Next 6 Days</button>
+        <button class="btn" type="submit">Save &amp; Update Next 6 Days</button>
       </form>` : ''}
+
     <div class="week-strip">
       ${week.map((d, i) => {
     const isVeg = S.vegDays.includes(d.dayIdx) || curDiet === 'veg';
     const hasBell = S.notifyDays.includes(d.dayIdx);
-    return `<button class="day-pill ${S.selectedDayIdx === i ? 'on' : ''}" data-dayidx="${i}">
+    return `<button type="button" class="day-pill ${S.selectedDayIdx === i ? 'on' : ''}" data-dayidx="${i}">
           <span>${WEEKDAYS[d.dayIdx]}</span><span>${d.date.slice(8)}</span>
           <span class="day-dots">${isVeg ? '<i class="dot-veg"></i>' : ''}${hasBell ? '<i class="dot-bell"></i>' : ''}</span>
         </button>`;
   }).join('')}
     </div>
-    ${adj ? `<div class="card" style="background:var(--brand-soft);border-color:rgba(79,70,229,0.28);padding:10px 14px;margin:8px 0;font-size:12.5px">
+
+    ${adj ? `<div class="dp-adj-banner">
       <b>6-Day Auto-Balance:</b> ${adj > 0 ? `+${adj}` : adj} kcal/day (${selDay.adjustedKcal} kcal target) to balance today's logged intake.
     </div>` : ''}
+
     ${selDay ? `<div class="day-ctrl-bar">
       <div>
-        <div style="font-size:13px;font-weight:800">${WEEKDAYS[selDay.dayIdx]} · ${selDay.date}</div>
-        <div class="mute" style="font-size:11.5px">${Math.round(dayKcal)} kcal · P ${Math.round(dayP)}g · C ${Math.round(dayC)}g · F ${Math.round(dayF)}g</div>
+        <div class="day-ctrl-title">${WEEKDAYS[selDay.dayIdx]} · ${selDay.date}</div>
+        <div class="dp-caption dp-num">${Math.round(dayKcal)} kcal · P ${Math.round(dayP)}g · C ${Math.round(dayC)}g · F ${Math.round(dayF)}g</div>
       </div>
-      <div style="display:flex;gap:6px">
-        ${curDiet !== 'veg' ? `<button class="veg-btn ${S.vegDays.includes(selDay.dayIdx) ? 'on' : ''}" data-toggleveg="${selDay.dayIdx}">${S.vegDays.includes(selDay.dayIdx) ? 'Veg-Only ✓' : 'Veg Day?'}</button>` : '<span class="tag fit">Veg</span>'}
-        <button class="bell-btn ${S.notifyDays.includes(selDay.dayIdx) ? 'on' : ''}" data-togglebell="${selDay.dayIdx}">${IC.bell} ${S.notifyDays.includes(selDay.dayIdx) ? 'On' : 'Notify'}</button>
+      <div class="dp-inline-group">
+        ${curDiet !== 'veg' ? `<button type="button" class="veg-btn ${S.vegDays.includes(selDay.dayIdx) ? 'on' : ''}" data-toggleveg="${selDay.dayIdx}">${S.vegDays.includes(selDay.dayIdx) ? 'Veg-Only ✓' : 'Veg Day?'}</button>` : '<span class="tag fit">Veg</span>'}
+        <button type="button" class="bell-btn ${S.notifyDays.includes(selDay.dayIdx) ? 'on' : ''}" data-togglebell="${selDay.dayIdx}">${IC.bell} ${S.notifyDays.includes(selDay.dayIdx) ? 'On' : 'Notify'}</button>
       </div>
     </div>` : ''}
-    ${dayLogs.length ? `<div class="sec-head" style="margin-top:8px"><h2>Logged Today</h2><span class="mute">${dayLogs.length} item(s)</span></div>
-      ${dayLogs.map(l => `<div class="wo-card accent-goals">
-        <div class="wo-badge" style="background:var(--goals-soft);color:var(--goals)">+</div>
-        <div style="flex:1;min-width:0">
-          <div class="wo-title">${esc(l.title)} <span class="tag goals" style="margin:0">${l.slot === 'extra' ? 'Extra' : 'Replaced ' + l.slot}</span></div>
-          <div class="wo-meta"><span><b>${Math.round(l.kcal)}</b> kcal</span><span>•</span><span>P ${l.protein}g</span><span>•</span><span>C ${l.carbs}g</span><span>•</span><span>F ${l.fat}g</span></div>
-        </div>
-        <button class="del-btn" data-dellog="${l.id}" title="Remove log">${IC.trash}</button>
-      </div>`).join('')}` : ''}
-    ${daySlots.map(s => {
-    const m = s.meal; if (!m) return '';
-    return `<div class="wo-card accent-fit ${s.done ? 'done' : ''}">
-        <button class="chk ${s.done ? 'on' : ''}" data-mealcheck="${s.slot}" data-done="${s.done ? 0 : 1}">${s.done ? '✓' : ''}</button>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span class="mute" style="font-size:11.5px;font-weight:700">${s.time} · ${s.label}</span>
-            <span class="tag ${m.diet_type === 'veg' ? 'fit' : 'med'}" style="margin:0">${m.diet_type === 'veg' ? 'Veg' : 'Non-veg'}</span>
-            ${s.replacedByLog ? `<span class="tag goals" style="margin:0">Logged</span>` : ''}
+
+    ${dayLogs.length ? `<div class="sec-head"><h2>Logged Today</h2><span class="mute">${dayLogs.length} item(s)</span></div>
+      <div class="list-stack dp-section">
+        ${dayLogs.map(l => `<div class="dp-row">
+          <div class="dp-row-ic ic-goals">${IC.plus}</div>
+          <div class="dp-row-body">
+            <div class="dp-row-title">${esc(l.title)}</div>
+            <div class="dp-row-sub"><span>${l.slot === 'extra' ? 'Extra' : 'Replaced ' + l.slot}</span><span>·</span><span>${Math.round(l.kcal)} kcal</span><span>·</span><span>P ${l.protein}g · C ${l.carbs}g · F ${l.fat}g</span></div>
           </div>
-          <div class="wo-title" style="margin-top:2px">${esc(m.title)}</div>
-          <div class="wo-meta"><span><b>${Math.round(m.kcal)}</b> kcal</span><span>•</span><span>P ${Math.round(m.protein)}g</span><span>•</span><span>C ${Math.round(m.carbs)}g</span><span>•</span><span>F ${Math.round(m.fat)}g</span></div>
-        </div>
-        ${S.selectedDayIdx === 0 ? `<button class="mini-action" style="margin:0;padding:6px 10px" data-swap="${s.slot}" title="Swap meal">${IC.swap}</button>` : ''}
-      </div>`;
-  }).join('')}`;
+          <button type="button" class="del-btn del-btn--danger" data-dellog="${l.id}" title="Remove log" aria-label="Remove log">${IC.trash}</button>
+        </div>`).join('')}
+      </div>` : ''}
+
+    <div class="list-stack">
+      ${daySlots.map(s => {
+    const m = s.meal; if (!m) return '';
+    return `<div class="dp-row ${s.done ? 'done' : ''}">
+          <div class="dp-row-ic ic-fit">${IC.utensils}</div>
+          <div class="dp-row-body">
+            <div class="dp-row-title">${esc(m.title)}</div>
+            <div class="dp-row-sub">
+              <span>${s.time} · ${s.label}</span>
+              <span>·</span>
+              <span>${m.diet_type === 'veg' ? 'Veg' : 'Non-veg'}</span>
+              ${s.replacedByLog ? `<span>·</span><span class="tag goals">Logged</span>` : ''}
+              <span>·</span>
+              <span>${Math.round(m.kcal)} kcal (P ${Math.round(m.protein)}g · C ${Math.round(m.carbs)}g · F ${Math.round(m.fat)}g)</span>
+            </div>
+          </div>
+          <div class="dp-row-actions">
+            ${S.selectedDayIdx === 0 ? `<button type="button" class="del-btn" data-swap="${s.slot}" title="Swap meal" aria-label="Swap meal">${IC.swap}</button>` : ''}
+            <button type="button" class="chk chk--fit ${s.done ? 'on' : ''}" data-mealcheck="${s.slot}" data-done="${s.done ? 0 : 1}" aria-label="Toggle meal">${s.done ? IC.check : ''}</button>
+          </div>
+        </div>`;
+  }).join('')}
+    </div>`;
 }
 
 export {

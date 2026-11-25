@@ -4,100 +4,109 @@ export function statusBarView() {
   return '';
 }
 
-const SUB_PAGE_HEADERS = {
-  '/profile/edit': { title: 'Edit Profile', back: '/profile' },
-  '/health/diet': { title: '7-Day Diet', back: '/health' },
-  '/health/activity': { title: 'Activity Tracker', back: '/health' },
-  '/fitness/workouts': { title: 'Exercise', back: '/exercise' },
-  '/fitness/diet': { title: '7-Day Diet', back: '/health' },
-  '/study/sessions': { title: 'Study Sessions', back: '/study' },
-  '/study/subjects': { title: 'Subjects', back: '/study' },
-  '/notifications': { title: 'Notifications', back: '/overview' },
-  '/schedule': { title: 'Schedule', back: null },
-  '/analytics': { title: 'Analytics', back: null },
-  '/profile': { title: 'Profile', back: null },
+const ROUTE_META = {
+  '/overview':         { title: 'Overview',         back: null,        showPillars: true },
+  '/health':           { title: 'Health & Diet',    back: null,        showPillars: true },
+  '/fitness':          { title: 'Health & Diet',    back: null,        showPillars: true },
+  '/health/diet':      { title: '7-Day Diet',       back: '/health',   showPillars: true },
+  '/fitness/diet':     { title: '7-Day Diet',       back: '/health',   showPillars: true },
+  '/health/activity':  { title: 'Activity Tracker', back: '/health',   showPillars: true },
+  '/exercise':         { title: 'Exercise',         back: null,        showPillars: true },
+  '/fitness/workouts': { title: 'Exercise',         back: '/exercise', showPillars: true },
+  '/study':            { title: 'Study & Focus',    back: null,        showPillars: true },
+  '/study/sessions':   { title: 'Study Sessions',   back: '/study',    showPillars: true },
+  '/study/subjects':   { title: 'Subjects',         back: '/study',    showPillars: true },
+  '/goals':            { title: 'Daily Goals',      back: null,        showPillars: true },
+  '/schedule':         { title: 'Schedule',         back: null,        showPillars: false },
+  '/analytics':        { title: 'Analytics',        back: null,        showPillars: false },
+  '/notifications':    { title: 'Notifications',    back: '/overview', showPillars: false },
+  '/profile':          { title: 'Profile',          back: null,        showPillars: false },
+  '/profile/edit':     { title: 'Edit Profile',     back: '/profile',  showPillars: false },
+};
+
+const PILLAR_ICONS = {
+  overview: IC.home,
+  health:   IC.drop,
+  exercise: IC.dumbbell,
+  study:    IC.book,
+  goals:    IC.target,
+};
+
+const PILLAR_CLS = {
+  overview: 'ic-brand',
+  health:   'ic-fit',
+  exercise: 'ic-fit',
+  study:    'ic-study',
+  goals:    'ic-goals',
 };
 
 export function headerView() {
-  const sub = SUB_PAGE_HEADERS[S.route];
-  const p = PILLARS[S.pillar];
+  const meta = ROUTE_META[S.route] || { title: 'Overview', back: null };
   const bellDot = activeReminderCount() > 0 ? '<span class="badge-dot"></span>' : '';
 
-  if (sub) {
-    return `<header class="dp-header dp-header-sub">
-      <div class="dp-header-left">
-        ${sub.back ? `<button class="dp-icon-btn" data-go="${sub.back}" title="Back">${IC.back}</button>` : `<img src="/assets/logo.jpg" alt="DailyPilot" class="dp-hdr-logo">`}
-        <div class="dp-header-page">${sub.title}</div>
-      </div>
-      <div class="dp-header-actions">
-        ${S.route !== '/notifications' ? `<button class="dp-icon-btn" data-go="/notifications" title="Notifications">${IC.bell}${bellDot}</button>` : ''}
-        <button class="dp-icon-btn" id="openSideNav" title="Menu">${IC.menu}</button>
-      </div>
-    </header>`;
-  }
-
   return `<header class="dp-header">
-    <button class="dp-brand-left" data-go="/overview" title="DailyPilot Home">
-      <img src="/assets/logo.jpg" alt="DailyPilot" class="dp-hdr-logo">
-      <span>DailyPilot</span>
-    </button>
-    <div class="dp-dropdown-wrap">
-      <button class="dp-title-btn" id="ddTrigger" aria-expanded="${S.ddOpen}">
-        <span class="dp-pillar-dot" style="background:${p.color}"></span>
-        <span>${p.label}</span>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
-      </button>
-      ${S.ddOpen ? `<div class="dp-dropdown-menu" id="ddMenu">
-        ${Object.values(PILLARS).map(x => `<button class="dp-dd-item ${S.pillar === x.id ? 'on' : ''}" data-pillar="${x.id}">
-          <span class="dd-ic" style="background:${x.color}18;color:${x.color}">${x.id === 'exercise' ? IC.dumbbell : x.id === 'health' ? IC.drop : x.id === 'study' ? IC.chart : x.id === 'goals' ? IC.cal : IC.home}</span>
-          <span>${x.label}<small>${x.desc}</small></span>
-        </button>`).join('')}
-      </div>` : ''}
-    </div>
-    <div class="dp-header-actions">
-      <button class="dp-icon-btn" data-go="/notifications" title="Notifications">${IC.bell}${bellDot}</button>
-      <button class="dp-icon-btn" id="openSideNav" title="Menu">${IC.menu}</button>
+    <div class="dp-header-inner">
+      <div class="dp-header-left">
+        ${meta.back ? `<button class="dp-icon-btn" data-go="${meta.back}" title="Back" aria-label="Back">${IC.back}</button>` : ''}
+        <button class="dp-brand-left" data-go="/overview" title="DailyPilot Home">
+          <span class="dp-logo-mark" aria-hidden="true">${IC.logo}</span>
+          <span class="dp-wordmark ${meta.back ? 'dp-wordmark--sub' : ''}">DailyPilot</span>
+        </button>
+      </div>
+      <div class="dp-header-title">${esc(meta.title)}</div>
+      <div class="dp-header-actions">
+        ${S.route !== '/notifications' ? `<button class="dp-icon-btn" data-go="/notifications" title="Notifications" aria-label="Notifications">${IC.bell}${bellDot}</button>` : ''}
+        <button class="dp-icon-btn" id="openSideNav" title="Menu" aria-label="Menu">${IC.menu}</button>
+      </div>
     </div>
   </header>`;
 }
 
+export function pillarTabsView() {
+  const meta = ROUTE_META[S.route];
+  if (!meta || !meta.showPillars) return '';
+  const items = [
+    ['overview', 'All'],
+    ['health',   'Health'],
+    ['exercise', 'Exercise'],
+    ['study',    'Study'],
+    ['goals',    'Goals'],
+  ];
+  return `<div class="dp-seg-wrap">
+    <div class="dp-seg" role="tablist" aria-label="Pillars">
+      ${items.map(([id, label]) => `
+        <button type="button" role="tab" aria-selected="${S.pillar === id}" class="dp-seg-btn ${S.pillar === id ? 'on' : ''}" data-pillar="${id}">${label}</button>
+      `).join('')}
+    </div>
+  </div>`;
+}
+
 export function navView() {
   const r = S.route;
-  if (S.pillar === 'health') {
-    return `<nav class="dp-nav"><div class="dp-nav-inner">
-      <button data-go="/health" class="${r === '/health' ? 'on' : ''}"><span class="nav-ic">${IC.home}</span>Health</button>
-      <button data-go="/health/diet" class="${r === '/health/diet' || r === '/fitness/diet' ? 'on' : ''}"><span class="nav-ic">${IC.cal}</span>7-Day Diet</button>
-      <button class="dp-fab" id="fabAdd" title="Quick Add">+</button>
-      <button data-go="/exercise" class="${r === '/exercise' ? 'on' : ''}"><span class="nav-ic">${IC.dumbbell}</span>Exercise</button>
-      <button data-go="/profile" class="${r.startsWith('/profile') ? 'on' : ''}"><span class="nav-ic">${IC.user}</span>Profile</button>
-    </div></nav>`;
-  }
-  if (S.pillar === 'exercise') {
-    return `<nav class="dp-nav"><div class="dp-nav-inner">
-      <button data-go="/exercise" class="${r === '/exercise' ? 'on' : ''}"><span class="nav-ic">${IC.dumbbell}</span>Workouts</button>
-      <button data-go="/health" class="${r === '/health' ? 'on' : ''}"><span class="nav-ic">${IC.drop}</span>Health</button>
-      <button class="dp-fab" id="fabAdd" title="Quick Add">+</button>
-      <button data-go="/schedule" class="${r === '/schedule' ? 'on' : ''}"><span class="nav-ic">${IC.cal}</span>Schedule</button>
-      <button data-go="/profile" class="${r.startsWith('/profile') ? 'on' : ''}"><span class="nav-ic">${IC.user}</span>Profile</button>
-    </div></nav>`;
-  }
-  if (S.pillar === 'study') {
-    return `<nav class="dp-nav"><div class="dp-nav-inner">
-      <button data-go="/study" class="${r === '/study' ? 'on' : ''}"><span class="nav-ic">${IC.home}</span>Timer</button>
-      <button data-go="/study/sessions" class="${r === '/study/sessions' ? 'on' : ''}"><span class="nav-ic">${IC.cal}</span>Sessions</button>
-      <button class="dp-fab" id="fabAdd" title="Quick Add">+</button>
-      <button data-go="/study/subjects" class="${r === '/study/subjects' ? 'on' : ''}"><span class="nav-ic">${IC.chart}</span>Subjects</button>
-      <button data-go="/profile" class="${r.startsWith('/profile') ? 'on' : ''}"><span class="nav-ic">${IC.user}</span>Profile</button>
-    </div></nav>`;
-  }
-  const homeRoute = S.pillar === 'goals' ? '/goals' : '/overview';
-  return `<nav class="dp-nav"><div class="dp-nav-inner">
-    <button data-go="${homeRoute}" class="${r === homeRoute ? 'on' : ''}"><span class="nav-ic">${IC.home}</span>${S.pillar === 'goals' ? 'Today' : 'Home'}</button>
-    <button data-go="/schedule" class="${r === '/schedule' ? 'on' : ''}"><span class="nav-ic">${IC.cal}</span>Schedule</button>
-    <button class="dp-fab" id="fabAdd" title="Quick Add">+</button>
-    <button data-go="/analytics" class="${r === '/analytics' ? 'on' : ''}"><span class="nav-ic">${IC.chart}</span>Analytics</button>
-    <button data-go="/profile" class="${r.startsWith('/profile') ? 'on' : ''}"><span class="nav-ic">${IC.user}</span>Profile</button>
-  </div></nav>`;
+  const isHome = r === '/overview' || r.startsWith('/health') || r.startsWith('/exercise') || r.startsWith('/fitness') || r.startsWith('/study') || r === '/goals';
+  return `<nav class="dp-nav" aria-label="Primary Navigation">
+    <div class="dp-nav-inner">
+      <button type="button" data-go="/overview" class="dp-nav-btn ${isHome ? 'on' : ''}" title="Home" aria-label="Home">
+        <span class="dp-nav-ic">${IC.home}</span>
+        <span class="dp-nav-lbl">Home</span>
+      </button>
+      <button type="button" data-go="/schedule" class="dp-nav-btn ${r === '/schedule' ? 'on' : ''}" title="Schedule" aria-label="Schedule">
+        <span class="dp-nav-ic">${IC.cal}</span>
+        <span class="dp-nav-lbl">Schedule</span>
+      </button>
+      <button type="button" class="dp-nav-add" id="fabAdd" title="Quick Add" aria-label="Quick Add">
+        ${IC.plus}
+      </button>
+      <button type="button" data-go="/analytics" class="dp-nav-btn ${r === '/analytics' ? 'on' : ''}" title="Analytics" aria-label="Analytics">
+        <span class="dp-nav-ic">${IC.chart}</span>
+        <span class="dp-nav-lbl">Analytics</span>
+      </button>
+      <button type="button" data-go="/profile" class="dp-nav-btn ${r.startsWith('/profile') ? 'on' : ''}" title="Profile" aria-label="Profile">
+        <span class="dp-nav-ic">${IC.user}</span>
+        <span class="dp-nav-lbl">Profile</span>
+      </button>
+    </div>
+  </nav>`;
 }
 
 function pillarFormFields(mp, item = {}) {
@@ -133,15 +142,16 @@ function pillarFormFields(mp, item = {}) {
 export function modalView() {
   if (S.modal === 'logout') {
     return `<div class="dp-modal-backdrop" id="modalBackdrop">
-      <div class="dp-modal" style="max-width:380px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <h2 style="margin:0">Sign Out?</h2>
-          <button class="del-btn" id="closeModal">✕</button>
+      <div class="dp-modal dp-modal--sm" role="dialog" aria-modal="true">
+        <div class="dp-modal-handle" aria-hidden="true"></div>
+        <div class="dp-modal-head">
+          <h2>Sign Out?</h2>
+          <button type="button" class="del-btn" id="closeModal" aria-label="Close">${IC.x}</button>
         </div>
-        <div class="mute" style="margin-bottom:16px">You will need to sign in again to access your DailyPilot data.</div>
+        <div class="mute dp-modal-desc">You will need to sign in again to access your DailyPilot data.</div>
         <div class="row">
-          <button class="btn sec" id="cancelLogout" style="margin-top:0">Cancel</button>
-          <button class="btn" id="confirmLogout" style="margin-top:0;background:var(--err)">Sign Out</button>
+          <button type="button" class="btn sec btn--flush" id="cancelLogout">Cancel</button>
+          <button type="button" class="btn danger btn--flush" id="confirmLogout">Sign Out</button>
         </div>
       </div>
     </div>`;
@@ -150,14 +160,15 @@ export function modalView() {
     const { col, item } = S.editItem;
     const label = col === 'workouts' ? 'Exercise Workout' : col === 'study' ? 'Study Session' : 'Daily Goal';
     return `<div class="dp-modal-backdrop" id="modalBackdrop">
-      <div class="dp-modal">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <h2 style="margin:0">Edit ${label}</h2>
-          <button class="del-btn" id="closeModal">✕</button>
+      <div class="dp-modal" role="dialog" aria-modal="true">
+        <div class="dp-modal-handle" aria-hidden="true"></div>
+        <div class="dp-modal-head">
+          <h2>Edit ${label}</h2>
+          <button type="button" class="del-btn" id="closeModal" aria-label="Close">${IC.x}</button>
         </div>
         <form id="editItemForm">
           ${pillarFormFields(col, item)}
-          <button class="btn">Save Changes</button>
+          <button class="btn" type="submit">Save Changes</button>
         </form>
       </div>
     </div>`;
@@ -165,12 +176,13 @@ export function modalView() {
   if (S.modal !== 'add') return '';
   const mp = S.modalPillar;
   return `<div class="dp-modal-backdrop" id="modalBackdrop">
-    <div class="dp-modal">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <h2 style="margin:0">Quick Add</h2>
-        <button class="del-btn" id="closeModal">✕</button>
+    <div class="dp-modal" role="dialog" aria-modal="true">
+      <div class="dp-modal-handle" aria-hidden="true"></div>
+      <div class="dp-modal-head">
+        <h2>Quick Add</h2>
+        <button type="button" class="del-btn" id="closeModal" aria-label="Close">${IC.x}</button>
       </div>
-      <label>Choose Pillar</label>
+      <label class="dp-label-first">Choose Pillar</label>
       <select id="modalPillarSel">
         <option value="exercise" ${mp === 'exercise' || mp === 'fitness' ? 'selected' : ''}>Exercise Workout</option>
         <option value="study" ${mp === 'study' ? 'selected' : ''}>Study Session</option>
@@ -178,7 +190,7 @@ export function modalView() {
       </select>
       <form id="quickAddForm">
         ${pillarFormFields(mp)}
-        <button class="btn">Add to ${PILLARS[mp].label}</button>
+        <button class="btn" type="submit">Add to ${PILLARS[mp].label}</button>
       </form>
     </div>
   </div>`;
@@ -196,19 +208,19 @@ export function sideNavView() {
       <div class="dp-sidenav-head">
         <div class="dp-sidenav-user">
           <div class="dp-sidenav-avatar">${initials}</div>
-          <div style="min-width:0">
+          <div class="dp-sidenav-user-text">
             <div class="dp-sidenav-name">${name}</div>
             <div class="dp-sidenav-email">${email}</div>
           </div>
         </div>
-        <button class="dp-icon-btn" id="closeSideNav" title="Close">✕</button>
+        <button type="button" class="dp-icon-btn" id="closeSideNav" title="Close" aria-label="Close menu">${IC.x}</button>
       </div>
 
       <div class="dp-sidenav-scroll">
         <div class="dp-sidenav-lbl">Pillars</div>
         ${Object.values(PILLARS).map(x => `
-          <button class="dp-sn-item ${S.pillar === x.id ? 'on' : ''}" data-pillar="${x.id}">
-            <span class="dp-sn-ic" style="background:${x.color}18;color:${x.color}">${x.id === 'exercise' ? IC.dumbbell : x.id === 'health' ? IC.drop : x.id === 'study' ? IC.chart : x.id === 'goals' ? IC.cal : IC.home}</span>
+          <button type="button" class="dp-sn-item ${S.pillar === x.id ? 'on' : ''}" data-pillar="${x.id}">
+            <span class="dp-sn-ic ${PILLAR_CLS[x.id] || 'ic-brand'}">${PILLAR_ICONS[x.id] || IC.home}</span>
             <span>${x.label}</span>
           </button>`).join('')}
 
@@ -216,19 +228,19 @@ export function sideNavView() {
         ${[
       ['/schedule', 'Schedule', IC.cal],
       ['/analytics', 'Analytics', IC.chart],
-      ['/health/diet', '7-Day Diet', IC.drop],
+      ['/health/diet', '7-Day Diet', IC.utensils],
       ['/health/activity', 'Activity Tracker', IC.route],
       ['/notifications', 'Notifications', IC.bell],
       ['/profile', 'Profile & Settings', IC.user],
     ].map(([route, lbl, ic]) => `
-          <button class="dp-sn-item ${r === route ? 'on' : ''}" data-go="${route}">
-            <span class="dp-sn-ic">${ic}</span>
+          <button type="button" class="dp-sn-item ${r === route ? 'on' : ''}" data-go="${route}">
+            <span class="dp-sn-ic ic-muted">${ic}</span>
             <span>${lbl}</span>
           </button>`).join('')}
       </div>
 
       <div class="dp-sidenav-foot">
-        <button class="btn sm" style="width:100%" data-openadd="goals">+ Quick Add</button>
+        <button type="button" class="btn btn--flush" data-openadd="goals">+ Quick Add</button>
       </div>
     </aside>
   </div>`;
