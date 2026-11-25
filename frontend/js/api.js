@@ -15,18 +15,19 @@ export async function api(path, method = 'GET', body) {
 export function logout(onDone) {
   localStorage.removeItem('dp_token');
   S.token = null; S.user = null; S.profile = null;
-  S.plan = null; S.recommendations = null; S.workouts = []; S.study = []; S.goals = [];
+  S.plan = null; S.recommendations = null; S.workouts = []; S.activities = []; S.study = []; S.goals = [];
   if (onDone) onDone();
 }
 
 export async function loadData() {
   const today = localDate();
   const d = S.viewDate || today;
-  const [plan, weekRes, progress, workouts, study, goals, recommendations] = await Promise.all([
+  const [plan, weekRes, progress, workouts, activities, study, goals, recommendations] = await Promise.all([
     api('/plan?date=' + today).catch(() => null),
     api('/plan/week?date=' + today).catch(() => null),
     api('/progress?date=' + today).catch(() => ({ steps: [], water: [], weights: [], weekly: [] })),
     api('/workouts?date=' + d).catch(() => []),
+    api('/activities').catch(() => []),
     api('/study?date=' + d).catch(() => []),
     api('/goals?date=' + d).catch(() => []),
     api('/recommendations?date=' + today).catch(() => null),
@@ -38,7 +39,7 @@ export async function loadData() {
   S.weekPlan = weekRes?.week || [];
   S.progress = progress;
   S.waterMl = (progress?.water?.find(w => w.date === today) || {}).ml || 0;
-  S.workouts = workouts; S.study = study; S.goals = goals;
+  S.workouts = workouts; S.activities = activities; S.study = study; S.goals = goals;
 }
 
 export async function savePrefs(patch, onDone) {

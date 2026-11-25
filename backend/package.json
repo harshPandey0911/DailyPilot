@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "test": "node tests/calc.test.js && node tests/recommendations.test.js"
+    "test": "node tests/calc.test.js && node tests/recommendations.test.js && node tests/activities.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

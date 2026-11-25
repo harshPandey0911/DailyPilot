@@ -10,9 +10,10 @@ const progressRoutes = require('./routes/progress.routes');
 const pillarsRoutes = require('./routes/pillars.routes');
 const recommendationsRoutes = require('./routes/recommendations.routes');
 const adminRoutes = require('./routes/admin.routes');
+const activitiesRoutes = require('./routes/activities.routes');
 
 const app = express();
-app.use(express.json({ limit: '100kb' }));
+app.use(express.json({ limit: '512kb' }));
 
 // CORS: needed when the frontend is hosted on a different origin than the backend.
 app.use((req, res, next) => {
@@ -58,6 +59,7 @@ app.use('/api', progressRoutes);
 app.use('/api', pillarsRoutes);
 app.use('/api', recommendationsRoutes);
 app.use('/api', adminRoutes);
+app.use('/api', activitiesRoutes);
 
 app.use('/api', (req, res) => fail(res, 'Not found', 404));
 

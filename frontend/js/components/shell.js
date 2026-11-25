@@ -7,6 +7,7 @@ export function statusBarView() {
 const SUB_PAGE_HEADERS = {
   '/profile/edit': { title: 'Edit Profile', back: '/profile' },
   '/health/diet': { title: '7-Day Diet', back: '/health' },
+  '/health/activity': { title: 'Activity Tracker', back: '/health' },
   '/fitness/workouts': { title: 'Exercise', back: '/exercise' },
   '/fitness/diet': { title: '7-Day Diet', back: '/health' },
   '/study/sessions': { title: 'Study Sessions', back: '/study' },
@@ -216,6 +217,7 @@ export function sideNavView() {
       ['/schedule', 'Schedule', IC.cal],
       ['/analytics', 'Analytics', IC.chart],
       ['/health/diet', '7-Day Diet', IC.drop],
+      ['/health/activity', 'Activity Tracker', IC.route],
       ['/notifications', 'Notifications', IC.bell],
       ['/profile', 'Profile & Settings', IC.user],
     ].map(([route, lbl, ic]) => `

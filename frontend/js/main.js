@@ -4,6 +4,7 @@ import { statusBarView, headerView, navView, modalView, sideNavView } from './co
 import { authView, bindAuth, onboardView, bindOnboard } from './pages/auth.page.js';
 import { overviewPage, schedulePage, analyticsPage } from './pages/overview.page.js';
 import { healthOverviewPage, exercisePage, healthDietPage } from './pages/fitness.page.js';
+import { activityPage, bindActivity } from './pages/activity.page.js';
 import { studyTimerPage, studySessionsPage, studySubjectsPage } from './pages/study.page.js';
 import { goalsPage } from './pages/goals.page.js';
 import { profilePage, profileEditPage } from './pages/profile.page.js';
@@ -15,6 +16,7 @@ const ROUTES = {
   '/overview': overviewPage,
   '/health': healthOverviewPage,
   '/health/diet': healthDietPage,
+  '/health/activity': activityPage,
   '/exercise': exercisePage,
   '/fitness': healthOverviewPage,
   '/fitness/workouts': exercisePage,
@@ -389,12 +391,13 @@ if (epf) {
   };
 }
 
-const lo = document.getElementById('logoutBtn');
-if (lo) lo.onclick = () => { S.sideNavOpen = false; S.modal = 'logout'; render(); };
-const cl = document.getElementById('cancelLogout');
-if (cl) cl.onclick = () => { S.modal = null; render(); };
-const cfl = document.getElementById('confirmLogout');
-if (cfl) cfl.onclick = () => { S.modal = null; logout(render); };
+  const lo = document.getElementById('logoutBtn');
+  if (lo) lo.onclick = () => { S.sideNavOpen = false; S.modal = 'logout'; render(); };
+  const cl = document.getElementById('cancelLogout');
+  if (cl) cl.onclick = () => { S.modal = null; render(); };
+  const cfl = document.getElementById('confirmLogout');
+  if (cfl) cfl.onclick = () => { S.modal = null; logout(render); };
+  if (S.route === '/health/activity') bindActivity(render);
 }
 
 document.addEventListener('click', () => { if (S.ddOpen) { S.ddOpen = false; render(); } });

@@ -109,6 +109,12 @@ export function healthOverviewPage() {
           <div style="flex:1"><div class="wo-title">Exercise Panel</div><div class="wo-meta">${S.workouts.filter(w => w.done).length}/${S.workouts.length} workouts done today</div></div>
           <span class="mute">›</span>
         </div>
+
+        <div class="wo-card" data-go="/health/activity" style="cursor:pointer;margin-top:10px;border-left:4px solid #fc4c02">
+          <div class="wo-badge" style="background:rgba(252,76,2,0.12);color:#fc4c02">${IC.route}</div>
+          <div style="flex:1"><div class="wo-title">GPS Activity Tracker</div><div class="wo-meta">${(S.activities || []).length} recorded runs, walks &amp; rides · Route Map</div></div>
+          <span class="mute">›</span>
+        </div>
       </div>
     </div>`;
 }
