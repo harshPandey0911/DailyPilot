@@ -7,7 +7,7 @@ export function overviewPage() {
   const first = esc((S.user?.name || 'Alex').split(' ')[0]);
   const eaten = Math.round(S.plan?.totals?.eaten?.kcal || 0);
   const targetKcal = S.targets?.calories || 2200;
-  const dateLabel = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const dateLabel = new Date((S.viewDate || localDate()) + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   const r = 36, circ = 2 * Math.PI * r;
   const dashOffset = circ * (1 - Math.min(100, m.goalPct) / 100);
@@ -155,7 +155,7 @@ export function schedulePage() {
   const doneCount = allRows.filter(r => r.done).length;
   const totalCount = allRows.length;
   const pctDone = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
-  const dateLabel = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const dateLabel = new Date((S.viewDate || localDate()) + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   const pending = rows.filter(r => !r.done);
   const completed = rows.filter(r => r.done);
@@ -183,6 +183,7 @@ export function schedulePage() {
           <div class="mute">${doneCount} of ${totalCount} tasks completed</div>
         </div>
         <div class="sched-summary-right">
+          <input type="date" id="viewDateIn" value="${esc(S.viewDate || localDate())}" style="width:auto;padding:5px 8px;font-size:12px;margin:0">
           <span class="sched-pct">${pctDone}%</span>
           <button class="btn sm" data-openadd="goals">+ Add</button>
         </div>
@@ -194,11 +195,11 @@ export function schedulePage() {
 
     <div class="sched-filters">
       ${[
-        ['all', `All (${allRows.length})`],
-        ['fit', `Fitness (${S.workouts.length})`],
-        ['study', `Study (${S.study.length})`],
-        ['goals', `Goals (${S.goals.length})`],
-      ].map(([k, lbl]) => `<button class="sched-pill ${filter === k ? 'on' : ''}" data-schedfilter="${k}">${lbl}</button>`).join('')}
+      ['all', `All (${allRows.length})`],
+      ['fit', `Fitness (${S.workouts.length})`],
+      ['study', `Study (${S.study.length})`],
+      ['goals', `Goals (${S.goals.length})`],
+    ].map(([k, lbl]) => `<button class="sched-pill ${filter === k ? 'on' : ''}" data-schedfilter="${k}">${lbl}</button>`).join('')}
     </div>
 
     ${!rows.length ? `
@@ -241,15 +242,16 @@ export function analyticsPage() {
   const todaySteps = (S.progress?.steps?.find(s => s.date === localDate()) || {}).steps || 0;
   const waterGoalMl = Math.round((target.waterL || 3.2) * 1000);
 
-  // Weekly chart: map JS getDay() (0=Sun..6=Sat) to Mon..Sun index (0=Mo..6=Su)
-  const todayMonIdx = (new Date().getDay() + 6) % 7;
+  // Weekly chart: use real backend completion data for Mon..Sun of current week
+  const todayStr = localDate();
   const days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-  const baseScores = [58, 76, 64, 88, 82, 70, 52];
-  const weekScores = days.map((d, i) => ({
-    day: d,
-    val: i === todayMonIdx ? Math.max(12, m.goalPct) : baseScores[i],
-    isToday: i === todayMonIdx,
-  }));
+  const weekly = S.progress?.weekly || [];
+  const weekScores = days.map((d, i) => {
+    const row = weekly[i];
+    const isToday = row ? row.date === todayStr : i === (new Date().getDay() + 6) % 7;
+    const val = isToday ? m.goalPct : (row ? row.pct : 0);
+    return { day: d, val, isToday };
+  });
   const weekAvg = Math.round(weekScores.reduce((a, b) => a + b.val, 0) / 7);
 
   const insight = m.goalPct >= 80
@@ -356,6 +358,24 @@ export function analyticsPage() {
             <div class="bar" style="margin:8px 0 0"><i style="width:${pct(S.waterMl, waterGoalMl)}%;background:var(--water)"></i></div>
           </div>
         </div>
+
+        ${(S.progress?.weights?.length || S.progress?.steps?.length) ? `
+        <div class="card" style="margin-top:var(--sp-3);margin-bottom:0">
+          <div class="sec-head" style="margin:0 0 var(--sp-2)">
+            <h3>Progress History</h3>
+            <span class="mute">${S.progress?.weights?.length || 0} weight logs</span>
+          </div>
+          ${S.progress?.weights?.length ? `<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px">
+            ${S.progress.weights.slice(-5).map(w => `<div class="an-macro-cell" style="min-width:72px"><small>${w.date.slice(5)}</small><b>${w.kg} kg</b></div>`).join('')}
+          </div>` : ''}
+          ${S.progress?.steps?.length ? `<div class="spark" style="height:68px;margin-top:8px">
+            ${S.progress.steps.slice(-7).map(st => `<div class="spark-col ${st.date === localDate() ? 'today' : ''}">
+              <span class="spark-val" style="font-size:9px">${st.steps >= 1000 ? (st.steps / 1000).toFixed(1) + 'k' : st.steps}</span>
+              <div class="spark-bar" style="height:${Math.max(8, Math.round(pct(st.steps, target.stepsGoal) * 0.4))}px"></div>
+              <span class="spark-lbl">${st.date.slice(8)}</span>
+            </div>`).join('')}
+          </div>` : ''}
+        </div>` : ''}
 
         <div class="tip-banner">
           <div style="font-size:var(--text-xs);font-weight:700;color:var(--fit);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px">Smart Insight</div>

@@ -26,15 +26,16 @@ export const IC = {
   drop: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 2.7 6.3 10a7 7 0 1 0 11.4 0z"/></svg>`,
   swap: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M17 3l4 4-4 4"/><path d="M3 7h18M7 21l-4-4 4-4"/><path d="M21 17H3"/></svg>`,
   trash: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>`,
+  edit: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`,
   menu: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`,
 };
 
 export const PILLARS = {
-  overview: { id: 'overview', label: 'All Pillars',   short: 'All',      color: '#4f46e5', desc: 'Unified daily summary' },
-  health:   { id: 'health',   label: 'Health & Diet', short: 'Health',   color: '#059669', desc: 'Calories, macros, steps, water & 7-day diet' },
-  exercise: { id: 'exercise', label: 'Exercise',      short: 'Exercise', color: '#0d9488', desc: 'Workouts, active minutes & calories burned' },
-  study:    { id: 'study',    label: 'Study',         short: 'Study',    color: '#7c3aed', desc: 'Focus timer & study sessions' },
-  goals:    { id: 'goals',    label: 'Daily Goals',   short: 'Goals',    color: '#ea580c', desc: 'Tasks, priorities & streaks' },
+  overview: { id: 'overview', label: 'All Pillars', short: 'All', color: '#4f46e5', desc: 'Unified daily summary' },
+  health: { id: 'health', label: 'Health & Diet', short: 'Health', color: '#059669', desc: 'Calories, macros, steps, water & 7-day diet' },
+  exercise: { id: 'exercise', label: 'Exercise', short: 'Exercise', color: '#0d9488', desc: 'Workouts, active minutes & calories burned' },
+  study: { id: 'study', label: 'Study', short: 'Study', color: '#7c3aed', desc: 'Focus timer & study sessions' },
+  goals: { id: 'goals', label: 'Daily Goals', short: 'Goals', color: '#ea580c', desc: 'Tasks, priorities & streaks' },
 };
 
 export const S = {
@@ -58,8 +59,10 @@ export const S = {
   searchQ: '',
   modal: null,
   modalPillar: 'goals',
+  editItem: null,
+  viewDate: localDate(),
   fitFilter: 'All',
-  waterMl: 2000,
+  waterMl: 0,
   editingSteps: false,
   weekPlan: null,
   selectedDayIdx: 0,
@@ -67,6 +70,8 @@ export const S = {
   notifyDays: [],
   studySubject: 'All',
   studyMode: 25,
+  timerSubject: 'Computer Science',
+  timerTitle: '',
   goalTab: 'all',
   goalCat: 'All',
   goalPrio: 'All',
@@ -85,4 +90,14 @@ export function metrics() {
   const focusMin = S.study.filter(x => x.done).reduce((a, b) => a + (b.duration_min || 0), 0);
   const focusFmt = `${Math.floor(focusMin / 60)}h ${focusMin % 60}m`;
   return { doneCount, totalCount, focusMin, focusFmt, goalPct: pct(doneCount, totalCount) };
+}
+
+export function activeReminderCount() {
+  const todayIdx = new Date().getDay();
+  const dietReminder = S.notifyDays.includes(todayIdx) ? 1 : 0;
+  const pendingCount =
+    S.workouts.filter(w => !w.done).length +
+    S.study.filter(s => !s.done).length +
+    S.goals.filter(g => !g.done).length;
+  return dietReminder + pendingCount;
 }

@@ -39,7 +39,7 @@ router.post(
         goal: req.body.goal || 'fit',
         activity: req.body.activity || 'moderate',
         diet_pref: req.body.diet_pref || 'both',
-        skin_care: 0,
+        skin_care: req.body.skin_care ? 1 : 0,
         veg_days: [],
         notify_days: [],
       };

@@ -52,6 +52,7 @@ router.patch(
     const patch = { updated_at: new Date() };
     if (['lose', 'fit', 'bulk'].includes(req.body.goal)) patch.goal = req.body.goal;
     if (['veg', 'nonveg', 'both'].includes(req.body.diet_pref)) patch.diet_pref = req.body.diet_pref;
+    if (req.body.skin_care !== undefined) patch.skin_care = req.body.skin_care ? 1 : 0;
     const vd = cleanDays(req.body.veg_days);
     const nd = cleanDays(req.body.notify_days);
     if (vd) patch.veg_days = vd;

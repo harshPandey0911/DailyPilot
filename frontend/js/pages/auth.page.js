@@ -33,6 +33,7 @@ export function authView() {
           <div><label>Activity</label><select name="activity"><option value="sedentary">Sedentary</option><option value="light">Light</option><option value="moderate" selected>Moderate</option><option value="active">Very Active</option></select></div>
           <div><label>Diet</label><select name="diet_pref"><option value="both">Both</option><option value="veg">Veg Only</option><option value="nonveg">Non-Veg</option></select></div>
         </div>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:600;cursor:pointer"><input type="checkbox" name="skin_care" value="1" style="width:auto;margin:0"> Include Skin-Care Nutrition &amp; Tips</label>
         <div id="bmiPreview" class="dp-auth-bmi"></div>
       ` : ''}
       <label style="${reg ? '' : 'margin-top:0'}">Email</label>
@@ -65,6 +66,7 @@ export function bindAuth(render, boot, go) {
   form.onsubmit = async e => {
     e.preventDefault();
     const b = Object.fromEntries(new FormData(e.target));
+    if (S.authMode === 'register') b.skin_care = !!form.skin_care?.checked;
     try {
       const r = await api('/auth/' + S.authMode, 'POST', b);
       S.token = r.token; S.user = r.user; localStorage.setItem('dp_token', r.token); S.err = '';
@@ -90,6 +92,7 @@ export function onboardView() {
         <div><label>Activity</label><select name="activity"><option value="sedentary">Sedentary</option><option value="light">Light</option><option value="moderate" selected>Moderate</option><option value="active">Active</option></select></div>
         <div><label>Diet</label><select name="diet_pref"><option value="both">Both</option><option value="veg">Veg Only</option><option value="nonveg">Non-Veg</option></select></div>
       </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:600;cursor:pointer"><input type="checkbox" name="skin_care" value="1" style="width:auto;margin:0"> Include Skin-Care Nutrition &amp; Tips</label>
       <button class="btn dp-btn-grad">Save &amp; Continue</button>
     </form></div>`;
 }
@@ -99,6 +102,7 @@ export function bindOnboard(render, loadData) {
   if (f) f.onsubmit = async e => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
+    d.skin_care = !!f.skin_care?.checked;
     try {
       const r = await api('/profile', 'PUT', { ...d, date: localDate() });
       S.profile = r.profile; S.targets = r.targets; S.err = '';

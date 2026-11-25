@@ -32,7 +32,8 @@ export function goalsPage() {
       <div style="flex:1;min-width:0"><div class="wo-title">${esc(g.title)}</div>
         <div class="wo-meta"><span>${esc(g.category)}</span><span>•</span><span style="text-transform:capitalize">${esc(g.priority)}</span>${g.time_label ? `<span>•</span><span>${esc(g.time_label)}</span>` : ''}</div>
       </div>
-      <button class="del-btn" data-del="goals" data-id="${g.id}">${IC.trash}</button>
+      <button class="del-btn" data-edit="goals" data-id="${g.id}" title="Edit">${IC.edit}</button>
+      <button class="del-btn" data-del="goals" data-id="${g.id}" title="Delete">${IC.trash}</button>
     </div>`).join('') : '<div class="card mute">No goals match these filters.</div>'}
     </div>`;
 }

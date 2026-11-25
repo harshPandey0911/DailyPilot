@@ -1,4 +1,4 @@
-import { S, PILLARS, IC, esc } from '../state.js';
+import { S, PILLARS, IC, esc, localDate, activeReminderCount } from '../state.js';
 
 export function statusBarView() {
   return '';
@@ -20,6 +20,7 @@ const SUB_PAGE_HEADERS = {
 export function headerView() {
   const sub = SUB_PAGE_HEADERS[S.route];
   const p = PILLARS[S.pillar];
+  const bellDot = activeReminderCount() > 0 ? '<span class="badge-dot"></span>' : '';
 
   if (sub) {
     return `<header class="dp-header dp-header-sub">
@@ -28,7 +29,7 @@ export function headerView() {
         <div class="dp-header-page">${sub.title}</div>
       </div>
       <div class="dp-header-actions">
-        ${S.route !== '/notifications' ? `<button class="dp-icon-btn" data-go="/notifications" title="Notifications">${IC.bell}<span class="badge-dot"></span></button>` : ''}
+        ${S.route !== '/notifications' ? `<button class="dp-icon-btn" data-go="/notifications" title="Notifications">${IC.bell}${bellDot}</button>` : ''}
         <button class="dp-icon-btn" id="openSideNav" title="Menu">${IC.menu}</button>
       </div>
     </header>`;
@@ -53,7 +54,7 @@ export function headerView() {
       </div>` : ''}
     </div>
     <div class="dp-header-actions">
-      <button class="dp-icon-btn" data-go="/notifications" title="Notifications">${IC.bell}<span class="badge-dot"></span></button>
+      <button class="dp-icon-btn" data-go="/notifications" title="Notifications">${IC.bell}${bellDot}</button>
       <button class="dp-icon-btn" id="openSideNav" title="Menu">${IC.menu}</button>
     </div>
   </header>`;
@@ -98,6 +99,36 @@ export function navView() {
   </div></nav>`;
 }
 
+function pillarFormFields(mp, item = {}) {
+  const isEx = mp === 'exercise' || mp === 'fitness' || mp === 'workouts';
+  const isStudy = mp === 'study';
+  const d = item.date || S.viewDate || localDate();
+  const sel = (opts, cur) => opts.map(o => `<option value="${esc(o)}" ${cur === o ? 'selected' : ''}>${esc(o)}</option>`).join('');
+
+  return `
+    <label>Title</label><input name="title" required value="${esc(item.title || '')}" placeholder="${isEx ? 'e.g. 5km Run' : isStudy ? 'e.g. React Hooks' : 'e.g. Read 20 pages'}">
+    <label>Date</label><input name="date" type="date" value="${esc(d)}">
+    ${isEx ? `<div class="row">
+      <div><label>Category</label><select name="category">${sel(['Strength', 'Cardio', 'Mobility', 'HIIT'], item.category || 'Strength')}</select></div>
+      <div><label>Minutes</label><input name="duration_min" type="number" min="1" max="600" value="${esc(item.duration_min ?? 30)}"></div>
+      <div><label>Calories</label><input name="calories" type="number" min="0" max="5000" value="${esc(item.calories ?? 180)}"></div>
+    </div>` : ''}
+    ${isStudy ? `<div class="row">
+      <div><label>Subject</label><select name="subject">${sel(['Computer Science', 'Mathematics', 'Design', 'Reading', 'Languages', 'General'], item.subject || 'Computer Science')}</select></div>
+      <div><label>Minutes</label><input name="duration_min" type="number" min="1" max="720" value="${esc(item.duration_min ?? 25)}"></div>
+      <div><label>Mode</label><select name="mode">${sel(['Pomodoro', 'Deep Work', 'Quick Sprint'], item.mode || 'Pomodoro')}</select></div>
+    </div>` : ''}
+    ${!isEx && !isStudy ? `<div class="row">
+      <div><label>Category</label><select name="category">${sel(['Work', 'Health', 'Learning', 'Personal', 'Daily'], item.category || 'Work')}</select></div>
+      <div><label>Priority</label><select name="priority">
+        <option value="high" ${item.priority === 'high' ? 'selected' : ''}>High</option>
+        <option value="medium" ${!item.priority || item.priority === 'medium' ? 'selected' : ''}>Medium</option>
+        <option value="low" ${item.priority === 'low' ? 'selected' : ''}>Low</option>
+      </select></div>
+      <div><label>Time Label</label><input name="time_label" value="${esc(item.time_label || '')}" placeholder="e.g. 9:00 AM"></div>
+    </div>` : ''}`;
+}
+
 export function modalView() {
   if (S.modal === 'logout') {
     return `<div class="dp-modal-backdrop" id="modalBackdrop">
@@ -111,6 +142,22 @@ export function modalView() {
           <button class="btn sec" id="cancelLogout" style="margin-top:0">Cancel</button>
           <button class="btn" id="confirmLogout" style="margin-top:0;background:var(--err)">Sign Out</button>
         </div>
+      </div>
+    </div>`;
+  }
+  if (S.modal === 'edit' && S.editItem) {
+    const { col, item } = S.editItem;
+    const label = col === 'workouts' ? 'Exercise Workout' : col === 'study' ? 'Study Session' : 'Daily Goal';
+    return `<div class="dp-modal-backdrop" id="modalBackdrop">
+      <div class="dp-modal">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h2 style="margin:0">Edit ${label}</h2>
+          <button class="del-btn" id="closeModal">✕</button>
+        </div>
+        <form id="editItemForm">
+          ${pillarFormFields(col, item)}
+          <button class="btn">Save Changes</button>
+        </form>
       </div>
     </div>`;
   }
@@ -129,10 +176,7 @@ export function modalView() {
         <option value="goals" ${mp === 'goals' ? 'selected' : ''}>Daily Goal</option>
       </select>
       <form id="quickAddForm">
-        <label>Title</label><input name="title" required placeholder="${mp === 'exercise' || mp === 'fitness' ? 'e.g. 5km Run' : mp === 'study' ? 'e.g. React Hooks' : 'e.g. Read 20 pages'}">
-        ${mp === 'exercise' || mp === 'fitness' ? `<div class="row"><div><label>Category</label><select name="category"><option>Strength</option><option>Cardio</option><option>Mobility</option><option>HIIT</option></select></div><div><label>Minutes</label><input name="duration_min" type="number" value="30"></div></div>` : ''}
-        ${mp === 'study' ? `<div class="row"><div><label>Subject</label><select name="subject"><option>Computer Science</option><option>Mathematics</option><option>Design</option><option>Reading</option></select></div><div><label>Minutes</label><input name="duration_min" type="number" value="25"></div></div>` : ''}
-        ${mp === 'goals' ? `<div class="row"><div><label>Category</label><select name="category"><option>Work</option><option>Health</option><option>Learning</option><option>Personal</option></select></div><div><label>Priority</label><select name="priority"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div></div>` : ''}
+        ${pillarFormFields(mp)}
         <button class="btn">Add to ${PILLARS[mp].label}</button>
       </form>
     </div>
@@ -169,12 +213,12 @@ export function sideNavView() {
 
         <div class="dp-sidenav-lbl">Pages</div>
         ${[
-          ['/schedule', 'Schedule', IC.cal],
-          ['/analytics', 'Analytics', IC.chart],
-          ['/health/diet', '7-Day Diet', IC.drop],
-          ['/notifications', 'Notifications', IC.bell],
-          ['/profile', 'Profile & Settings', IC.user],
-        ].map(([route, lbl, ic]) => `
+      ['/schedule', 'Schedule', IC.cal],
+      ['/analytics', 'Analytics', IC.chart],
+      ['/health/diet', '7-Day Diet', IC.drop],
+      ['/notifications', 'Notifications', IC.bell],
+      ['/profile', 'Profile & Settings', IC.user],
+    ].map(([route, lbl, ic]) => `
           <button class="dp-sn-item ${r === route ? 'on' : ''}" data-go="${route}">
             <span class="dp-sn-ic">${ic}</span>
             <span>${lbl}</span>

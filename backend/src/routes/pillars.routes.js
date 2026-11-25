@@ -73,18 +73,35 @@ for (const p of CRUD_PILLARS) {
       if (!id) return fail(res, 'Invalid id');
       const patch = {};
       if (req.body.done !== undefined) patch.done = !!req.body.done;
-      if (req.body.title !== undefined) patch.title = str(req.body.title, 140);
-      if (req.body.duration_min !== undefined) {
-        patch.duration_min = Math.max(1, Math.min(720, Math.round(num(req.body.duration_min) || 25)));
-      }
-      const r = await col(p.col).findOneAndUpdate(
-        { _id: id, user_id: req.user._id },
-        { $set: patch },
-        { returnDocument: 'after' }
-      );
-      if (!r) return fail(res, 'Not found', 404);
-      res.json(withId(r));
-    })
+        if (req.body.title !== undefined) {
+          const t = str(req.body.title, 140);
+          if (!t) return fail(res, 'Title required');
+          patch.title = t;
+        }
+        if (req.body.date !== undefined && isDate(req.body.date) && dayDiff(req.body.date) <= 7) {
+          patch.date = req.body.date;
+        }
+        if (p.path === 'workouts') {
+          if (req.body.category !== undefined) patch.category = str(req.body.category || 'Strength', 40);
+          if (req.body.duration_min !== undefined) patch.duration_min = Math.max(1, Math.min(600, Math.round(num(req.body.duration_min) || 30)));
+          if (req.body.calories !== undefined) patch.calories = Math.max(0, Math.min(5000, Math.round(num(req.body.calories) || 0)));
+        } else if (p.path === 'study') {
+          if (req.body.subject !== undefined) patch.subject = str(req.body.subject || 'General', 60);
+          if (req.body.mode !== undefined) patch.mode = str(req.body.mode || 'Pomodoro', 40);
+          if (req.body.duration_min !== undefined) patch.duration_min = Math.max(1, Math.min(720, Math.round(num(req.body.duration_min) || 25)));
+        } else if (p.path === 'goals') {
+          if (req.body.category !== undefined) patch.category = str(req.body.category || 'Daily', 40);
+          if (req.body.priority !== undefined && ['low', 'medium', 'high'].includes(req.body.priority)) patch.priority = req.body.priority;
+          if (req.body.time_label !== undefined) patch.time_label = str(req.body.time_label || '', 40);
+        }
+        const r = await col(p.col).findOneAndUpdate(
+          { _id: id, user_id: req.user._id },
+          { $set: patch },
+          { returnDocument: 'after' }
+        );
+        if (!r) return fail(res, 'Not found', 404);
+        res.json(withId(r));
+      })
   );
 
   router.delete(

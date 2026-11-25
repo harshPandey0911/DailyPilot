@@ -32,7 +32,11 @@ export function notificationsPage() {
           <h3 style="margin:0">Push Alerts</h3>
           <div class="mute">${perm === 'granted' ? 'Browser notifications enabled' : perm === 'denied' ? 'Blocked in browser settings' : 'Enable browser alerts for diet days'}</div>
         </div>
-        ${perm === 'default' ? `<button class="btn sm" id="reqNotifPermBtn">Enable</button>` : `<span class="tag ${perm === 'granted' ? 'fit' : ''}">${perm}</span>`}
+        ${perm === 'default'
+      ? `<button class="btn sm" id="reqNotifPermBtn">Enable</button>`
+      : perm === 'granted'
+        ? `<button class="btn sm sec" id="testNotifBtn">Test Alert</button>`
+        : `<span class="tag">${perm}</span>`}
       </div>
     </div>
 
@@ -42,14 +46,14 @@ export function notificationsPage() {
     </div>
     <div class="week-strip">
       ${WEEKDAYS.map((day, idx) => {
-        const on = S.notifyDays.includes(idx);
-        const veg = S.vegDays.includes(idx) || S.profile?.diet_pref === 'veg';
-        return `<button class="day-pill ${on ? 'on' : ''}" data-togglebell="${idx}">
+          const on = S.notifyDays.includes(idx);
+          const veg = S.vegDays.includes(idx) || S.profile?.diet_pref === 'veg';
+          return `<button class="day-pill ${on ? 'on' : ''}" data-togglebell="${idx}">
           <span>${day}</span>
           <span style="font-size:10px;opacity:.85">${on ? 'On' : 'Off'}</span>
           <span class="day-dots">${veg ? '<i class="dot-veg" title="Veg-only"></i>' : ''}</span>
         </button>`;
-      }).join('')}
+        }).join('')}
     </div>
 
     <div class="sec-head"><h2>Today's Reminders</h2><span class="mute">${items.length} active</span></div>

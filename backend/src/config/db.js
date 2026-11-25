@@ -23,6 +23,7 @@ async function connect(uri = process.env.MONGODB_URI, dbName = process.env.DB_NA
     col('plans').createIndex({ user_id: 1, date: 1 }, { unique: true }),
     col('checks').createIndex({ user_id: 1, date: 1, slot: 1 }, { unique: true }),
     col('steps').createIndex({ user_id: 1, date: 1 }, { unique: true }),
+    col('water').createIndex({ user_id: 1, date: 1 }, { unique: true }),
     col('weights').createIndex({ user_id: 1, date: 1 }, { unique: true }),
     col('meals').createIndex({ status: 1, slot: 1 }),
     col('food_logs').createIndex({ user_id: 1, date: 1 }),

@@ -52,10 +52,36 @@ export function healthOverviewPage() {
           </div>
           <div class="bento-card" style="border-top:3px solid var(--water)">
             <div class="bento-head"><span class="bento-ic" style="background:var(--water-soft);color:var(--water)">${IC.drop}</span><span class="bento-sub">${pct(S.waterMl, waterGoalMl)}%</span></div>
-            <div><div class="bento-val">${(S.waterMl / 1000).toFixed(1)} L</div><div class="bento-sub">of ${(waterGoalMl / 1000).toFixed(1)} L water</div><div class="bar" style="margin:8px 0 0"><i style="width:${pct(S.waterMl, waterGoalMl)}%;background:var(--water)"></i></div></div>
-            <button class="mini-action" id="addWater">+ 250 ml</button>
+            <div><div class="bento-val">${(S.waterMl / 1000).toFixed(2).replace(/\.00$/, '.0')} L</div><div class="bento-sub">of ${(waterGoalMl / 1000).toFixed(1)} L water</div><div class="bar" style="margin:8px 0 0"><i style="width:${pct(S.waterMl, waterGoalMl)}%;background:var(--water)"></i></div></div>
+            <div style="display:flex;gap:6px">
+              <button class="mini-action" id="addWater" style="flex:1">+ 250 ml</button>
+              ${S.waterMl > 0 ? `<button class="mini-action" id="subWater" title="Undo 250 ml">−250</button>` : ''}
+            </div>
           </div>
         </div>
+        ${(S.progress?.weights?.length || S.progress?.steps?.length) ? `
+        <div class="card" style="margin-top:12px">
+          <div class="sec-head" style="margin:0 0 8px"><h3>7-Day Steps &amp; Weight</h3><button class="link" data-go="/analytics" style="padding:0">Analytics ›</button></div>
+          ${S.progress?.weights?.length ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:10px;background:var(--bg);margin-bottom:10px">
+            <div><div class="mute" style="font-size:11px">Latest Weight</div><b>${S.progress.weights[S.progress.weights.length - 1].kg} kg</b></div>
+            <div style="text-align:right"><div class="mute" style="font-size:11px">Trend (${S.progress.weights.length} logs)</div><b>${(() => { const w = S.progress.weights; if (w.length < 2) return 'Baseline'; const diff = +(w[w.length - 1].kg - w[0].kg).toFixed(1); return `${diff > 0 ? '+' : ''}${diff} kg`; })()}</b></div>
+          </div>` : ''}
+          ${S.progress?.steps?.length ? `<div class="spark" style="height:78px">
+            ${S.progress.steps.slice(-7).map(st => `<div class="spark-col ${st.date === localDate() ? 'today' : ''}">
+              <span class="spark-val" style="font-size:9px">${st.steps >= 1000 ? (st.steps / 1000).toFixed(1) + 'k' : st.steps}</span>
+              <div class="spark-bar" style="height:${Math.max(8, Math.round(pct(st.steps, t.stepsGoal) * 0.45))}px"></div>
+              <span class="spark-lbl">${st.date.slice(8)}</span>
+            </div>`).join('')}
+          </div>` : ''}
+        </div>` : ''}
+        ${S.profile?.skin_care && S.plan?.tips?.length ? `
+        <div class="card" style="margin-top:12px;border-left:4px solid var(--fit)">
+          <div class="sec-head" style="margin:0 0 6px"><h3>Skin-Care Tips</h3><span class="tag fit">Active</span></div>
+          ${S.plan.tips.slice(0, 3).map(tip => `<div style="margin-top:8px">
+            <div style="font-weight:700;font-size:13px">${esc(tip.title)}</div>
+            <div class="mute" style="font-size:12px">${esc(tip.body)}</div>
+          </div>`).join('')}
+        </div>` : ''}
       </div>
 
       <div>
@@ -67,8 +93,8 @@ export function healthOverviewPage() {
           </div>
         </div>
         ${slots.length ? slots.map(s => {
-          const m = s.meal; if (!m) return '';
-          return `<div class="wo-card accent-fit ${s.done ? 'done' : ''}">
+    const m = s.meal; if (!m) return '';
+    return `<div class="wo-card accent-fit ${s.done ? 'done' : ''}">
             <button class="chk ${s.done ? 'on' : ''}" data-mealcheck="${s.slot}" data-done="${s.done ? 0 : 1}">${s.done ? '✓' : ''}</button>
             <div style="flex:1;min-width:0">
               <div class="mute" style="font-size:11px;font-weight:700">${s.label} · ${s.time}</div>
@@ -76,7 +102,7 @@ export function healthOverviewPage() {
               <div class="wo-meta"><span>${Math.round(m.kcal)} kcal</span><span>•</span><span>P ${Math.round(m.protein)}g</span></div>
             </div>
           </div>`;
-        }).join('') : '<div class="card mute">Open 7-Day Diet to view your meals.</div>'}
+  }).join('') : '<div class="card mute">Open 7-Day Diet to view your meals.</div>'}
 
         <div class="wo-card accent-fit" data-go="/exercise" style="cursor:pointer;margin-top:12px">
           <div class="wo-badge" style="background:var(--fit-soft);color:var(--fit)">${IC.dumbbell}</div>
@@ -148,6 +174,7 @@ export function exercisePage() {
         <div class="wo-badge" style="background:var(--fit-soft);color:var(--fit)">${IC.dumbbell}</div>
         <div style="flex:1;min-width:0"><div class="wo-title">${esc(w.title)}</div><div class="wo-meta"><span class="tag fit" style="margin:0">${esc(w.category)}</span><span>${w.duration_min} min</span><span>•</span><span>${w.calories} kcal</span></div></div>
         <button class="chk ${w.done ? 'on' : ''}" data-toggle="workouts" data-id="${w.id}" data-done="${!w.done}">${w.done ? '✓' : ''}</button>
+        <button class="del-btn" data-edit="workouts" data-id="${w.id}" title="Edit">${IC.edit}</button>
         <button class="del-btn" data-del="workouts" data-id="${w.id}" title="Delete">${IC.trash}</button>
       </div>`).join('') : '<div class="card mute" style="text-align:center;padding:24px">No workouts match this filter.</div>'}
 
@@ -156,21 +183,21 @@ export function exercisePage() {
       ${S.arcOpen && recs.length ? `
         <div class="dp-arc-oval" aria-hidden="true"></div>
         ${recs.slice(0, 4).map((r, idx, arr) => {
-          const n = arr.length;
-          const startDeg = isLeft ? -58 : 122;
-          const angleDeg = n === 1 ? (isLeft ? 0 : 180) : startDeg + (idx * (116 / (n - 1)));
-          const rad = (angleDeg * Math.PI) / 180;
-          const rx = 92;
-          const ry = 108;
-          const x = Math.round(Math.cos(rad) * rx);
-          const y = Math.round(-Math.sin(rad) * ry);
-          return `<div class="dp-arc-item" style="--tx:${x}px;--ty:${y}px;--d:${idx * 35}ms">
+    const n = arr.length;
+    const startDeg = isLeft ? -58 : 122;
+    const angleDeg = n === 1 ? (isLeft ? 0 : 180) : startDeg + (idx * (116 / (n - 1)));
+    const rad = (angleDeg * Math.PI) / 180;
+    const rx = 92;
+    const ry = 108;
+    const x = Math.round(Math.cos(rad) * rx);
+    const y = Math.round(-Math.sin(rad) * ry);
+    return `<div class="dp-arc-item" style="--tx:${x}px;--ty:${y}px;--d:${idx * 35}ms">
             <button class="dp-arc-pill" data-addrec="${idx}" title="${esc(r.reason || '')}">
               <b>${esc(r.title)}</b><span>${r.duration_min}m · ${r.calories} kcal</span>
             </button>
             <button class="dp-arc-dot" data-addrec="${idx}" title="${esc(r.title)}">${arcIcon(r.category)}</button>
           </div>`;
-        }).join('')}
+  }).join('')}
       ` : ''}
       <button class="dp-arc-fab" id="arcFabBtn" aria-expanded="${!!S.arcOpen}" title="Drag to move · Tap for recommendations">
         <span>+</span>
@@ -225,13 +252,13 @@ export function healthDietPage() {
       </form>` : ''}
     <div class="week-strip">
       ${week.map((d, i) => {
-        const isVeg = S.vegDays.includes(d.dayIdx) || curDiet === 'veg';
-        const hasBell = S.notifyDays.includes(d.dayIdx);
-        return `<button class="day-pill ${S.selectedDayIdx === i ? 'on' : ''}" data-dayidx="${i}">
+    const isVeg = S.vegDays.includes(d.dayIdx) || curDiet === 'veg';
+    const hasBell = S.notifyDays.includes(d.dayIdx);
+    return `<button class="day-pill ${S.selectedDayIdx === i ? 'on' : ''}" data-dayidx="${i}">
           <span>${WEEKDAYS[d.dayIdx]}</span><span>${d.date.slice(8)}</span>
           <span class="day-dots">${isVeg ? '<i class="dot-veg"></i>' : ''}${hasBell ? '<i class="dot-bell"></i>' : ''}</span>
         </button>`;
-      }).join('')}
+  }).join('')}
     </div>
     ${adj ? `<div class="card" style="background:var(--brand-soft);border-color:rgba(79,70,229,0.28);padding:10px 14px;margin:8px 0;font-size:12.5px">
       <b>6-Day Auto-Balance:</b> ${adj > 0 ? `+${adj}` : adj} kcal/day (${selDay.adjustedKcal} kcal target) to balance today's logged intake.
@@ -256,8 +283,8 @@ export function healthDietPage() {
         <button class="del-btn" data-dellog="${l.id}" title="Remove log">${IC.trash}</button>
       </div>`).join('')}` : ''}
     ${daySlots.map(s => {
-      const m = s.meal; if (!m) return '';
-      return `<div class="wo-card accent-fit ${s.done ? 'done' : ''}">
+    const m = s.meal; if (!m) return '';
+    return `<div class="wo-card accent-fit ${s.done ? 'done' : ''}">
         <button class="chk ${s.done ? 'on' : ''}" data-mealcheck="${s.slot}" data-done="${s.done ? 0 : 1}">${s.done ? '✓' : ''}</button>
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -270,7 +297,7 @@ export function healthDietPage() {
         </div>
         ${S.selectedDayIdx === 0 ? `<button class="mini-action" style="margin:0;padding:6px 10px" data-swap="${s.slot}" title="Swap meal">${IC.swap}</button>` : ''}
       </div>`;
-    }).join('')}`;
+  }).join('')}`;
 }
 
 export {

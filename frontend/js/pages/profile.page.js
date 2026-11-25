@@ -32,6 +32,10 @@ export function profilePage() {
         <span class="prof-row-left"><span class="prof-row-ic" style="background:var(--fit-soft);color:var(--fit)">${IC.drop}</span>Diet Preference</span>
         <span class="prof-row-val">${dietLabels[p.diet_pref] || 'Both'} ›</span>
       </button>
+      <button class="prof-row" data-go="/profile/edit">
+        <span class="prof-row-left"><span class="prof-row-ic" style="background:var(--fit-soft);color:var(--fit)">${IC.drop}</span>Skin-Care Mode</span>
+        <span class="prof-row-val">${p.skin_care ? 'Enabled' : 'Off'} ›</span>
+      </button>
       <button class="prof-row" data-go="/fitness/diet">
         <span class="prof-row-left"><span class="prof-row-ic" style="background:var(--warnbg);color:var(--warn)">${IC.bell}</span>7-Day Diet &amp; Reminders</span>
         <span class="prof-row-val">${S.notifyDays.length}/7 days · ${S.vegDays.length} veg ›</span>
@@ -90,6 +94,10 @@ export function profileEditPage() {
         <option value="nonveg" ${p.diet_pref === 'nonveg' ? 'selected' : ''}>Non-Veg</option>
         <option value="both" ${!p.diet_pref || p.diet_pref === 'both' ? 'selected' : ''}>Both</option>
       </select>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-weight:600;cursor:pointer">
+        <input type="checkbox" name="skin_care" value="1" ${p.skin_care ? 'checked' : ''} style="width:auto;margin:0">
+        Include Skin-Care Nutrition &amp; Daily Tips
+      </label>
       <button class="btn">Save Profile</button>
     </form>`;
 }
