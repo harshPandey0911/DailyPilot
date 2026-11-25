@@ -1,6 +1,6 @@
 const assert = require('assert');
-const { computeTargets, validateProfile, rankCandidates, SLOTS } = require('./calc');
-const { runSeed } = require('./seed'); const { connect, close, loadMeals } = require('./db');
+const { computeTargets, validateProfile, rankCandidates, SLOTS } = require('../src/services/calc');
+const { runSeed } = require('../src/services/seed'); const { connect, close, loadMeals } = require('../src/config/db');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 // Known value: Mifflin-St Jeor male 30y 175cm 75kg => 10*75+6.25*175-150+5 = 1698.75

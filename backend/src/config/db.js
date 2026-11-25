@@ -3,7 +3,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 const bcrypt = require('bcryptjs');
 
 // Load backend/.env (Node 20.12+ built-in, no dotenv needed). Real env vars win.
-try { process.loadEnvFile(path.join(__dirname, '.env')); } catch { /* no .env file */ }
+try { process.loadEnvFile(path.join(__dirname, '..', '..', '.env')); } catch { /* no .env file */ }
 
 let client, database;
 const col = name => database.collection(name);
@@ -25,6 +25,10 @@ async function connect(uri = process.env.MONGODB_URI, dbName = process.env.DB_NA
     col('steps').createIndex({ user_id: 1, date: 1 }, { unique: true }),
     col('weights').createIndex({ user_id: 1, date: 1 }, { unique: true }),
     col('meals').createIndex({ status: 1, slot: 1 }),
+    col('food_logs').createIndex({ user_id: 1, date: 1 }),
+    col('workouts').createIndex({ user_id: 1, date: 1 }),
+    col('study_sessions').createIndex({ user_id: 1, date: 1 }),
+    col('goals').createIndex({ user_id: 1, date: 1 }),
   ]);
 }
 const close = () => client && client.close();

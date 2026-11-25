@@ -1,7 +1,7 @@
 // Starter data so the app works on day 1. Per-100g values are approximate figures from
 // USDA FoodData Central / IFCT 2017. They are NOT yet signed off by a dietitian:
 // every seeded meal carries reviewed_by = PENDING and shows up in the admin "needs review" list.
-const { col } = require('./db');
+const { col } = require('../config/db');
 
 const SRC = 'USDA FoodData Central / IFCT 2017 (approx.)';
 const FOODS = [
