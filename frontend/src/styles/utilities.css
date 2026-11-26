@@ -1,0 +1,26 @@
+/* Small single-purpose utilities. Keep this list short and token-based. */
+.hidden { display: none !important; }
+.block { display: block; }
+.w-full { width: 100%; }
+.min-w-0 { min-width: 0; }
+.overflow-hidden { overflow: hidden; }
+.overflow-x-auto { overflow-x: auto; }
+.relative { position: relative; }
+.rounded { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-full { border-radius: var(--radius-pill); }
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.bg-surface { background: var(--color-surface); }
+.bg-alt { background: var(--color-surface-alt); }
+.bg-primary { background: var(--color-primary); color: var(--color-text-on-primary); }
+.bg-dark { background: var(--color-surface-dark); color: var(--color-text-inverse); }
+.border { border: 1px solid var(--color-border); }
+.m-0 { margin: 0; }
+.mt-1 { margin-top: var(--space-1); } .mt-2 { margin-top: var(--space-2); } .mt-4 { margin-top: var(--space-4); } .mt-6 { margin-top: var(--space-6); } .mt-8 { margin-top: var(--space-8); }
+.mb-2 { margin-bottom: var(--space-2); } .mb-4 { margin-bottom: var(--space-4); } .mb-6 { margin-bottom: var(--space-6); }
+.mx-auto { margin-inline: auto; }
+.p-2 { padding: var(--space-2); } .p-4 { padding: var(--space-4); } .p-6 { padding: var(--space-6); }
+.gap-1 { gap: var(--space-1); } .gap-2 { gap: var(--space-2); } .gap-3 { gap: var(--space-3); } .gap-4 { gap: var(--space-4); } .gap-6 { gap: var(--space-6); }
+.aspect-video { aspect-ratio: 16 / 9; object-fit: cover; }
+.aspect-square { aspect-ratio: 1; object-fit: cover; }

@@ -1,0 +1,64 @@
+/* ==========================================================================
+   Responsive layer — mobile-first (base styles = phones, 320px+).
+   Breakpoints: 576 · 768 · 992 · 1200 · 1440 · 1920
+   ========================================================================== */
+
+/* Small phones 320–374 */
+@media (max-width: 374.98px) {
+  :root { --page-gutter: 0.875rem; }
+  .btn { padding-inline: var(--space-4); }
+  .page-header__actions, .page-header__actions .btn { width: 100%; }
+}
+
+/* Large phones / small tablets 576+ */
+@media (min-width: 576px) {
+  .grid--2, .grid--3, .grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .form-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .modal-backdrop { align-items: center; padding: var(--space-4); }
+  .modal { max-width: 32rem; border-radius: var(--radius-xl); }
+  .modal--lg { max-width: 48rem; }
+  .modal__footer { flex-direction: row; justify-content: flex-end; padding-bottom: var(--space-4); }
+}
+
+/* Tablets 768+: bottom nav is phone-only */
+@media (min-width: 768px) {
+  .bottom-nav { display: none; }
+  .app-main { padding-bottom: 0; }
+  .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Large tablets / laptops 992+: persistent sidebar */
+@media (min-width: 992px) {
+  .menu-toggle, .sidebar-backdrop { display: none; }
+  .sidebar { position: sticky; top: var(--header-height); height: calc(100dvh - var(--header-height)); z-index: auto; flex: none; width: var(--sidebar-width); transform: none; visibility: visible; box-shadow: none; }
+  .grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .grid--main-aside { grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem); }
+  .grid--gap-lg { gap: var(--space-8); }
+}
+
+/* Short landscape phones: compact chrome */
+@media (max-height: 480px) and (orientation: landscape) {
+  :root { --header-height: 3.25rem; --bottom-nav-height: 3.25rem; }
+  .modal { max-height: 96dvh; }
+}
+
+/* Small laptops 1200+ */
+@media (min-width: 1200px) { :root { --sidebar-width: 16.5rem; } }
+
+/* Standard desktops 1440+ */
+@media (min-width: 1440px) { :root { --container-max: 1360px; } }
+
+/* Large desktops 1920+ */
+@media (min-width: 1920px) {
+  :root { --container-max: 1560px; }
+  html { font-size: 106.25%; }
+}
+
+/* Don't leave hover lift stuck on touch devices */
+@media (hover: none) {
+  .card--interactive:hover { transform: none; box-shadow: var(--shadow-xs); }
+}
+
+@media print {
+  .sidebar, .bottom-nav, .app-header { display: none !important; }
+}

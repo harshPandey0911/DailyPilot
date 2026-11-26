@@ -1,0 +1,117 @@
+/* ==========================================================================
+   DailyPilot design tokens — LIGHT THEME ONLY.
+   Every color/size/shadow used anywhere should come from here.
+   ========================================================================== */
+:root {
+  color-scheme: light;
+
+  /* Brand */
+  --color-primary: #c8ea5e;
+  --color-primary-hover: #b5d943;
+  --color-primary-active: #a5cc32;
+  --color-primary-light: #f3f8e9;
+  --color-primary-dark: #30451d;
+
+  /* Surfaces */
+  --color-bg: #f7f9f5;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f3f8e9;
+  --color-surface-dark: #111713;
+
+  /* Text */
+  --color-text: #111713;
+  --color-text-secondary: #687568;
+  --color-text-muted: #929b8f; /* placeholders / decorative only (<4.5:1 on white) */
+  --color-text-inverse: #ffffff;
+  --color-text-on-primary: #111713; /* never white on lime */
+
+  /* Borders */
+  --color-border: #e5ebdd;
+  --color-border-strong: #d4ddcb;
+  --color-border-focus: #a5cc32;
+
+  /* Status + tints derived from them */
+  --color-success: #2f854a;
+  --color-warning: #d99b2b;
+  --color-danger: #d94c4c;
+  --color-info: #3b82a0;
+  --color-success-bg: color-mix(in srgb, var(--color-success) 12%, white);
+  --color-warning-bg: color-mix(in srgb, var(--color-warning) 14%, white);
+  --color-danger-bg: color-mix(in srgb, var(--color-danger) 11%, white);
+  --color-info-bg: color-mix(in srgb, var(--color-info) 12%, white);
+  --color-danger-hover: color-mix(in srgb, var(--color-danger) 88%, black);
+  --color-overlay: color-mix(in srgb, var(--color-surface-dark) 55%, transparent);
+
+  /* Typography */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  --fs-h1: clamp(1.75rem, 1.4rem + 1.6vw, 2.75rem);
+  --fs-h2: clamp(1.375rem, 1.2rem + 0.9vw, 2rem);
+  --fs-h3: clamp(1.125rem, 1.05rem + 0.4vw, 1.375rem);
+  --fs-body: clamp(0.9375rem, 0.9rem + 0.15vw, 1rem);
+  --fs-label: 0.875rem;
+  --fs-caption: 0.8125rem;
+  --fs-meta: 0.75rem;
+  --fs-button: 0.9375rem;
+  --lh-tight: 1.2;
+  --lh-snug: 1.35;
+  --lh-body: 1.6;
+
+  /* Spacing (4px base) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --page-gutter: clamp(1rem, 0.5rem + 2.5vw, 2.5rem);
+  --section-gap: clamp(1.5rem, 1rem + 2.5vw, 3rem);
+  --card-pad: clamp(1rem, 0.8rem + 1vw, 1.75rem);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgb(17 23 19 / 0.05);
+  --shadow-sm: 0 1px 3px rgb(17 23 19 / 0.06), 0 1px 2px rgb(17 23 19 / 0.04);
+  --shadow-md: 0 6px 16px rgb(17 23 19 / 0.07);
+  --shadow-lg: 0 16px 40px rgb(17 23 19 / 0.12);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-border-focus) 40%, transparent);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --transition: var(--duration-base) var(--ease);
+
+  /* Layout */
+  --container-max: 1280px;
+  --container-narrow: 760px;
+  --sidebar-width: 15rem;
+  --header-height: 4rem;
+  --bottom-nav-height: 4rem;
+  --touch-target: 2.75rem; /* 44px */
+  --control-height: 2.75rem;
+
+  /* Z-index */
+  --z-header: 100;
+  --z-sidebar: 200;
+  --z-modal: 300;
+  --z-tooltip: 400;
+
+  /* Breakpoints (reference only; CSS vars can't be used in @media):
+     576 · 768 · 992 · 1200 · 1440 · 1920 */
+}

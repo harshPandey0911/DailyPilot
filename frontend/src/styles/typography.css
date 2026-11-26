@@ -1,0 +1,32 @@
+/* Typography — headings, body, labels, captions */
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-body);
+  color: var(--color-text);
+}
+h1, .text-page-title { font-size: var(--fs-h1); font-weight: var(--fw-bold); line-height: var(--lh-tight); letter-spacing: -0.02em; }
+h2, .text-section-title { font-size: var(--fs-h2); font-weight: var(--fw-semibold); line-height: var(--lh-tight); letter-spacing: -0.015em; }
+h3, .text-card-title { font-size: var(--fs-h3); font-weight: var(--fw-semibold); line-height: var(--lh-snug); letter-spacing: -0.01em; }
+h4 { font-size: var(--fs-body); font-weight: var(--fw-semibold); line-height: var(--lh-snug); }
+.text-body { font-size: var(--fs-body); }
+.text-label { font-size: var(--fs-label); font-weight: var(--fw-medium); line-height: var(--lh-snug); }
+.text-caption { font-size: var(--fs-caption); color: var(--color-text-secondary); }
+.text-meta { font-size: var(--fs-meta); font-weight: var(--fw-medium); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+.text-secondary { color: var(--color-text-secondary); }
+.text-muted { color: var(--color-text-muted); }
+.text-inverse { color: var(--color-text-inverse); }
+.text-success { color: var(--color-success); }
+.text-danger { color: var(--color-danger); }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.fw-medium { font-weight: var(--fw-medium); }
+.fw-semibold { font-weight: var(--fw-semibold); }
+.fw-bold { font-weight: var(--fw-bold); }
+.text-mono { font-family: var(--font-mono); }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prose > * + * { margin-top: var(--space-4); }
+.prose a, .link { color: var(--color-primary-dark); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--color-primary-active); }
+.prose a:hover, .link:hover { text-decoration-color: currentColor; }
+code, kbd { font-family: var(--font-mono); font-size: 0.9em; background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 0.1em 0.4em; }

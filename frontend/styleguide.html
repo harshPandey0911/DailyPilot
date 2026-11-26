@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DailyPilot — Style Guide</title>
+  <link rel="stylesheet" href="./src/styles/index.css" />
+  <script>
+    // Demo-only behaviour: drawer toggle
+    document.addEventListener("click", (e) => {
+      const t = e.target.closest("[data-toggle-sidebar], .sidebar-backdrop");
+      if (!t) return;
+      document.querySelector(".sidebar").classList.toggle("is-open");
+      document.querySelector(".sidebar-backdrop").classList.toggle("is-open");
+    });
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="app-shell">
+    <header class="app-header">
+      <button class="btn btn--ghost btn--icon menu-toggle" data-toggle-sidebar aria-label="Open menu">☰</button>
+      <a class="app-header__brand" href="#">DailyPilot</a>
+      <div class="app-header__spacer"></div>
+      <span class="avatar" aria-hidden="true">DP</span>
+    </header>
+    <div class="app-body">
+      <nav class="sidebar" aria-label="Primary">
+        <a class="nav-item is-active" href="#" aria-current="page">Dashboard</a>
+        <a class="nav-item" href="#">Planner</a>
+        <a class="nav-item" href="#">Fitness</a>
+        <a class="nav-item" href="#">Settings</a>
+      </nav>
+      <div class="sidebar-backdrop"></div>
+      <main id="main" class="app-main">
+        <div class="container page">
+          <header class="page-header">
+            <div>
+              <h1>Design System</h1>
+              <p class="page-header__sub">Neo-fintech minimal · light theme</p>
+            </div>
+            <div class="page-header__actions">
+              <button class="btn btn--outline">Export</button>
+              <button class="btn btn--primary">New item</button>
+            </div>
+          </header>
+
+          <section class="section" aria-labelledby="s-stats">
+            <h2 id="s-stats">Statistics</h2>
+            <div class="grid grid--4">
+              <div class="card"><div class="stat"><span class="stat__label">Steps today</span><span class="stat__value">8,420</span><span class="stat__delta">+12%</span></div></div>
+              <div class="card"><div class="stat"><span class="stat__label">Tasks done</span><span class="stat__value">14</span><span class="stat__delta stat__delta--down">−3</span></div></div>
+              <div class="card card--secondary"><div class="stat"><span class="stat__label">Streak</span><span class="stat__value">21 d</span></div></div>
+              <div class="card card--highlight"><div class="stat"><span class="stat__label">Balance</span><span class="stat__value">₹4,250</span></div></div>
+            </div>
+          </section>
+
+          <div class="grid grid--main-aside grid--gap-lg">
+            <section class="section" aria-labelledby="s-btn">
+              <h2 id="s-btn">Buttons &amp; badges</h2>
+              <div class="card stack">
+                <div class="cluster">
+                  <button class="btn btn--primary">Primary</button>
+                  <button class="btn btn--secondary">Secondary</button>
+                  <button class="btn btn--outline">Outline</button>
+                  <button class="btn btn--ghost">Ghost</button>
+                  <button class="btn btn--danger">Danger</button>
+                  <button class="btn btn--primary" disabled>Disabled</button>
+                  <button class="btn btn--primary is-loading">Loading</button>
+                </div>
+                <div class="cluster">
+                  <span class="badge">Default</span><span class="badge badge--primary">Primary</span><span class="badge badge--success">Success</span>
+                  <span class="badge badge--warning">Warning</span><span class="badge badge--danger">Danger</span><span class="badge badge--info">Info</span>
+                </div>
+                <div class="tabs" role="tablist">
+                  <button class="tab is-active" role="tab" aria-selected="true">Overview</button>
+                  <button class="tab" role="tab" aria-selected="false">Activity</button>
+                  <button class="tab" role="tab" aria-selected="false">Reports</button>
+                </div>
+                <div class="cluster">
+                  <span class="tooltip"><button class="btn btn--outline btn--sm" aria-describedby="tip1">Hover me</button><span id="tip1" role="tooltip" class="tooltip__content">Helpful hint</span></span>
+                  <div class="pagination"><button class="pagination__item" disabled>‹</button><a class="pagination__item is-active" href="#">1</a><a class="pagination__item" href="#">2</a><a class="pagination__item" href="#">3</a><a class="pagination__item" href="#">›</a></div>
+                </div>
+              </div>
+              <div class="stack">
+                <div class="alert"><div><p class="alert__title">Info</p><p class="text-secondary">Your plan renews on the 1st.</p></div></div>
+                <div class="alert alert--success"><div><p class="alert__title">Saved</p></div></div>
+                <div class="alert alert--warning"><div><p class="alert__title">Heads up</p></div></div>
+                <div class="alert alert--danger"><div><p class="alert__title">Something failed</p></div></div>
+              </div>
+            </section>
+
+            <aside class="section" aria-labelledby="s-form">
+              <h2 id="s-form">Form</h2>
+              <form class="card stack" onsubmit="return false">
+                <div class="search"><svg class="search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input class="input" type="search" placeholder="Search…" aria-label="Search" /></div>
+                <div class="form-row">
+                  <div class="field"><label class="field__label" for="n">Name</label><input id="n" class="input" placeholder="Jane Doe" /></div>
+                  <div class="field"><label class="field__label" for="c">Category</label><select id="c" class="select"><option>Health</option><option>Work</option></select></div>
+                </div>
+                <div class="field"><label class="field__label" for="e">Email</label><input id="e" class="input" aria-invalid="true" value="not-an-email" /><span class="field__error">Enter a valid email</span></div>
+                <div class="field"><label class="field__label" for="t">Notes</label><textarea id="t" class="textarea"></textarea><span class="field__hint">Optional</span></div>
+                <div class="cluster"><label class="check"><input type="checkbox" checked /><span>Remind me</span></label><label class="check"><input type="radio" name="r" checked /><span>Daily</span></label><label class="check"><input type="radio" name="r" /><span>Weekly</span></label><label class="check"><input type="checkbox" disabled /><span>Disabled</span></label></div>
+                <button class="btn btn--primary btn--block">Save</button>
+              </form>
+            </aside>
+          </div>
+
+          <section class="section" aria-labelledby="s-table">
+            <h2 id="s-table">Table</h2>
+            <div class="table-wrap">
+              <table class="table table--stack">
+                <thead><tr><th>Task</th><th>Status</th><th>Due</th><th class="num">Amount</th></tr></thead>
+                <tbody>
+                  <tr><td data-label="Task">Morning run</td><td data-label="Status"><span class="badge badge--success">Done</span></td><td data-label="Due">Today</td><td data-label="Amount" class="num">₹120</td></tr>
+                  <tr><td data-label="Task">Submit report</td><td data-label="Status"><span class="badge badge--warning">Pending</span></td><td data-label="Due">Tomorrow</td><td data-label="Amount" class="num">₹2,400</td></tr>
+                  <tr><td data-label="Task">Pay rent</td><td data-label="Status"><span class="badge badge--danger">Overdue</span></td><td data-label="Due">Yesterday</td><td data-label="Amount" class="num">₹15,000</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="section" aria-labelledby="s-states">
+            <h2 id="s-states">Empty &amp; loading</h2>
+            <div class="grid grid--auto-lg">
+              <div class="card"><div class="empty-state"><span class="empty-state__icon" aria-hidden="true">✓</span><p class="empty-state__title">All caught up</p><p>No tasks left for today.</p><button class="btn btn--primary">Add task</button></div></div>
+              <div class="card stack" aria-busy="true"><span class="skeleton" style="height:1.5rem;width:60%"></span><span class="skeleton" style="height:1rem"></span><span class="skeleton" style="height:1rem;width:80%"></span><div class="loading-overlay"><span class="spinner" role="status" aria-label="Loading"></span></div></div>
+            </div>
+          </section>
+
+          <section class="section">
+            <h2>Typography</h2>
+            <div class="card stack--sm stack">
+              <p class="text-meta">Metadata</p>
+              <h1>Page heading</h1><h2>Section heading</h2><h3>Card heading</h3>
+              <p>Body text — Inter, comfortable line-height for long reading.</p>
+              <p class="text-label">Label text</p><p class="text-caption">Caption text</p>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <nav class="bottom-nav" aria-label="Mobile">
+      <a class="nav-item is-active" href="#">Home</a><a class="nav-item" href="#">Plan</a><a class="nav-item" href="#">Fit</a><a class="nav-item" href="#">Me</a>
+    </nav>
+  </div>
+</body>
+</html>
