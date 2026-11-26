@@ -1,13 +1,14 @@
 import { lazy, Suspense, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import logo from "../../assets/DailyPilot Logo.png";
-import { AtIcon, CalendarIcon, HourglassIcon, MailIcon, PhoneIcon, RulerIcon, ScaleIcon, UserIcon } from "../../components/forms/Icons.jsx";
+import { AtIcon, CalendarIcon, HourglassIcon, MailIcon, PhoneIcon, RulerIcon, ScaleIcon, TargetIcon, UserIcon } from "../../components/forms/Icons.jsx";
 import { clearDraft, loadDraft } from "../../services/profileDraft.js";
 import { signup } from "../../services/authService.js";
 
 // three.js is large — load it only when this page is opened.
 const Avatar3D = lazy(() => import("../../components/avatar/Avatar3D.jsx"));
 
+const AREA_LABEL = { fitness: "Fitness", study: "Study", goals: "Daily Goals" };
 const GENDER_LABEL = { male: "Male", female: "Female", other: "Other" };
 
 function ageFromDob(dob) {
@@ -37,6 +38,7 @@ export default function VerifyProfile() {
     { icon: <AtIcon />, label: "Username", value: `@${draft.username}` },
     { icon: <PhoneIcon />, label: "Mobile number", value: draft.phone },
     { icon: <MailIcon />, label: "Email", value: draft.email || "Not provided" },
+    { icon: <TargetIcon />, label: "Focus", value: AREA_LABEL[draft.area] ?? "Fitness" },
     { icon: <HourglassIcon />, label: "Age", value: `${age} years` },
     ...(draft.dob ? [{ icon: <CalendarIcon />, label: "Date of birth", value: formatDob(draft.dob) }] : []),
     { icon: <ScaleIcon />, label: "Weight", value: `${weightKg} kg` },
@@ -58,6 +60,7 @@ export default function VerifyProfile() {
         weightKg,
         heightCm,
         gender: draft.gender,
+        focusArea: draft.area || "fitness",
       });
       clearDraft();
       navigate("/home");

@@ -41,6 +41,10 @@
 .is-docked .auth__content { visibility: visible; opacity: 1; animation: content-up 0.85s var(--ease) both; }
 @keyframes content-up { from { transform: translateY(70dvh); opacity: 0; } }
 
+/* Brand panel: transparent wrapper on phones, lime side panel on desktop */
+.auth__brand { display: contents; }
+.auth__tagline { display: none; }
+
 .auth__back { position: absolute; z-index: 3; top: var(--space-4); left: var(--space-3); }
 
 /* Form */
@@ -91,8 +95,53 @@
   transition: background-color 9999s ease-out;
 }
 
+/* Fitness details revealed after choosing a focus */
+.auth-form__group { display: flex; flex-direction: column; gap: var(--space-4); animation: rise 0.45s var(--ease) both !important; animation-delay: 0s !important; }
+
 .input-wrap__suffix { position: absolute; right: var(--space-4); font-size: var(--fs-label); font-weight: var(--fw-medium); color: var(--color-text-secondary); pointer-events: none; }
 .input-wrap:has(.input-wrap__suffix) .input { padding-right: 3.25rem; }
 .auth-form .form-row { align-items: start; }
 .input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
 .input[type="number"]::-webkit-outer-spin-button, .input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ==========================================================================
+   Desktop (>= 992px): split screen — lime brand panel left, form right.
+   Phones/tablets keep the stacked layout above.
+   ========================================================================== */
+@media (min-width: 992px) {
+  .auth { --logo-w: clamp(11rem, 17vw, 15rem); }
+  .auth::before { content: ""; position: fixed; inset: 0 50% 0 0; z-index: 0; background: var(--color-primary); }
+
+  .auth__brand {
+    position: fixed; z-index: 2; inset: 0 50% 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: var(--space-8); padding: var(--space-8); text-align: center;
+  }
+  .auth__logo { position: relative; left: auto; top: auto; width: var(--logo-w); transform: none; transition: transform 0.9s var(--ease); }
+  .is-intro .auth__logo { top: auto; transform: translateX(25vw) scale(1.25); } /* starts at screen centre, glides into the panel */
+
+  .auth__tagline { display: block; max-width: 28rem; transition: opacity 0.7s var(--ease) 0.5s; }
+  .is-intro .auth__tagline { opacity: 0; }
+  .auth__tagline h2 { font-size: clamp(2rem, 1.2rem + 1.6vw, 2.75rem); line-height: 1.12; margin-bottom: var(--space-3); }
+  .auth__tagline p { color: color-mix(in srgb, var(--color-text) 78%, transparent); }
+  .auth__chips { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin: var(--space-5) 0 0; padding: 0; list-style: none; }
+  .auth__chips li { padding: 0.3rem 0.85rem; font-size: var(--fs-caption); font-weight: var(--fw-semibold); border-radius: var(--radius-pill); background: color-mix(in srgb, var(--color-primary) 55%, white); color: var(--color-primary-dark); }
+
+  .auth__blob--tr { right: auto; left: -6rem; top: -7rem; }
+  .auth__blob--bl { left: auto; right: -5rem; }
+
+  .auth__content {
+    width: 50%; max-width: none; margin: 0 0 0 50%; min-height: 100dvh;
+    padding: var(--space-16) var(--space-8) var(--space-12); display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .auth__content > .auth-form { width: 100%; max-width: 28rem; }
+  .auth__back { top: var(--space-6); left: var(--space-6); }
+}
+
+/* Wide desktops: the signup form uses two columns */
+@media (min-width: 1200px) {
+  .auth__content > .auth-form--wide { max-width: 38rem; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+  .auth-form--wide > * { grid-column: 1 / -1; }
+  .auth-form--wide > .field { grid-column: auto; }
+  .auth-form--wide .auth-form__group { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+  .auth-form--wide .auth-form__group > fieldset { grid-column: 1 / -1; }
+}

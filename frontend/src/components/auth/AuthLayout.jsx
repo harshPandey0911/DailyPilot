@@ -30,8 +30,18 @@ export default function AuthLayout() {
     <div className={`auth ${docked ? "is-docked" : "is-intro"} ${skipIntro ? "is-skip" : ""}`}>
       <span className="auth__blob auth__blob--tr" aria-hidden="true" />
       <span className="auth__blob auth__blob--bl" aria-hidden="true" />
-      <div className="auth__logo">
-        <img className="auth__logo-img" src={logo} alt="DailyPilot" draggable="false" />
+      <div className="auth__brand">
+        <div className="auth__logo">
+          <img className="auth__logo-img" src={logo} alt="DailyPilot" draggable="false" />
+        </div>
+        {/* desktop only: shown in the lime brand panel */}
+        <div className="auth__tagline">
+          <h2>Your Daily Life Companion</h2>
+          <p>Plan, track and improve your fitness, studies, diet and daily goals – all in one place.</p>
+          <ul className="auth__chips" role="list">
+            <li>Fitness</li><li>Study</li><li>Diet</li><li>Daily Goals</li>
+          </ul>
+        </div>
       </div>
       <main className="auth__content" id="main">
         <Outlet />

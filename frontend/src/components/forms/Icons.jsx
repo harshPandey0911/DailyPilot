@@ -10,6 +10,7 @@ export const PhoneIcon = () => (<svg {...base}><path d="M5 4h4l2 5-2.5 1.5a11 11
 export const EyeIcon = () => (<svg {...base}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg>);
 export const EyeOffIcon = () => (<svg {...base}><path d="M3 3l18 18" /><path d="M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.5 6.6A17 17 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 4-.8" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></svg>);
 export const BackIcon = () => (<svg {...base} width="22" height="22"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>);
+export const TargetIcon = () => (<svg {...base}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.2" /></svg>);
 export const ArrowRightIcon = () => (<svg {...base} width="18" height="18"><path d="M5 12h14M13 6l6 6-6 6" /></svg>);
 export const AtIcon = () => (<svg {...base}><circle cx="12" cy="12" r="4" /><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" /></svg>);
 export const CalendarIcon = () => (<svg {...base}><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M8 3v4M16 3v4M3 10h18" /></svg>);
