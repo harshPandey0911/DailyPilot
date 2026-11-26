@@ -6,7 +6,7 @@
 /* Small phones 320–374 */
 @media (max-width: 374.98px) {
   :root { --page-gutter: 0.875rem; }
-  .btn { padding-inline: var(--space-4); }
+  .btn:not(.btn--icon) { padding-inline: var(--space-4); }
   .page-header__actions, .page-header__actions .btn { width: 100%; }
 }
 

@@ -1,0 +1,98 @@
+/* ==========================================================================
+   Auth screens. Splash: logo builds in the centre on lime → logo moves to the
+   top while the background turns off-white → form rises from the bottom.
+   The form sits directly on the page (no card). Tokens come from variables.css.
+   ========================================================================== */
+.auth {
+  --zone: clamp(8.5rem, 22dvh, 13rem);       /* space reserved for the docked logo */
+  --logo-w: clamp(6.5rem, 17dvh, 9rem);      /* docked logo width */
+  position: relative; min-height: 100dvh; overflow-x: clip; background: var(--color-bg);
+  transition: background-color 0.9s var(--ease);
+}
+.auth.is-intro { background: var(--color-primary); height: 100dvh; overflow: hidden; }
+
+/* Decorative lime circles in two corners */
+.auth__blob { position: fixed; z-index: 0; border-radius: 50%; pointer-events: none; background: color-mix(in srgb, var(--color-primary) 55%, white); transition: opacity 0.9s var(--ease); }
+.auth__blob--tr { top: -7rem; right: -6rem; width: 18rem; height: 18rem; }
+.auth__blob--bl { position: absolute; bottom: -6rem; left: -5rem; width: 14rem; height: 14rem; background: var(--color-primary); opacity: 0.85; }
+.is-intro .auth__blob { opacity: 0; }
+
+/* Logo: centred + enlarged in the intro, docked at the top afterwards */
+.auth__logo {
+  position: absolute; z-index: 2; left: 50%; top: calc(var(--zone) / 2); width: var(--logo-w);
+  transform: translate(-50%, -50%);
+  transition: top 0.9s var(--ease), transform 0.9s var(--ease);
+}
+.is-intro .auth__logo { top: 50dvh; transform: translate(-50%, -50%) scale(1.9); }
+.auth__logo-img { width: 100%; user-select: none; mix-blend-mode: multiply; /* PNG has a white backdrop */ }
+.is-intro:not(.is-skip) .auth__logo-img { animation: logo-build 1.1s var(--ease) both; }
+@keyframes logo-build {
+  from { clip-path: inset(100% 0 0 0); opacity: 0; transform: translateY(1.5rem) scale(0.85); filter: blur(6px); }
+  60%  { opacity: 1; filter: blur(0); }
+  to   { clip-path: inset(0 0 0 0); opacity: 1; transform: none; filter: none; }
+}
+
+/* Content sits straight on the page, below the logo */
+.auth__content {
+  position: relative; z-index: 1; width: 100%; max-width: 28rem; margin-inline: auto;
+  padding: var(--zone) clamp(1.25rem, 6vw, 1.75rem) calc(var(--space-8) + env(safe-area-inset-bottom));
+  visibility: hidden; opacity: 0;
+}
+.is-docked .auth__content { visibility: visible; opacity: 1; animation: content-up 0.85s var(--ease) both; }
+@keyframes content-up { from { transform: translateY(70dvh); opacity: 0; } }
+
+.auth__back { position: absolute; z-index: 3; top: var(--space-4); left: var(--space-3); }
+
+/* Form */
+.auth-form { display: flex; flex-direction: column; gap: var(--space-4); }
+.auth-form__title { font-size: var(--fs-h2); }
+.auth-form__forgot { align-self: flex-end; margin-top: calc(var(--space-2) * -1); font-size: var(--fs-label); font-weight: var(--fw-semibold); color: var(--color-text); text-decoration: none; }
+.auth-form__forgot:hover { text-decoration: underline; text-underline-offset: 3px; }
+.auth-form__switch { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3); color: var(--color-text-secondary); font-size: var(--fs-label); text-align: center; }
+
+.auth-divider { display: flex; align-items: center; gap: var(--space-3); color: var(--color-text-secondary); font-size: var(--fs-caption); }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--color-border-strong); }
+.auth-social { display: flex; justify-content: center; gap: var(--space-4); }
+.auth-social .btn { width: 3.5rem; height: 3.5rem; min-height: 3.5rem; padding: 0; border-radius: 50%; background: var(--color-surface); }
+.auth-social svg { width: 1.5rem; height: 1.5rem; }
+
+/* Staggered entrance of form rows once docked */
+.is-docked .auth-form > * { animation: rise 0.55s var(--ease) both; animation-delay: 0.6s; }
+.is-docked .auth-form > :nth-child(1) { animation-delay: 0.45s; }
+.is-docked .auth-form > :nth-child(2) { animation-delay: 0.5s; }
+.is-docked .auth-form > :nth-child(3) { animation-delay: 0.55s; }
+.is-docked .auth-form > :nth-child(4) { animation-delay: 0.6s; }
+.is-docked .auth-form > :nth-child(5) { animation-delay: 0.65s; }
+.is-docked .auth-form > :nth-child(6) { animation-delay: 0.7s; }
+.is-docked .auth-form > :nth-child(7) { animation-delay: 0.75s; }
+.is-docked .auth-form > :nth-child(n+8) { animation-delay: 0.8s; }
+@keyframes rise { from { opacity: 0; transform: translateY(0.75rem); } }
+
+/* Input with leading icon / trailing toggle (pill) */
+.input-wrap { position: relative; display: flex; align-items: center; }
+.input-wrap .input { padding-left: 3rem; border-radius: var(--radius-control); }
+.input-wrap__icon { position: absolute; left: var(--space-4); display: grid; place-items: center; color: var(--color-text-secondary); pointer-events: none; }
+.input-wrap:focus-within .input-wrap__icon { color: var(--color-primary-dark); }
+.input-wrap__toggle { position: absolute; right: 0.15rem; width: 2.5rem; min-height: 2.5rem; color: var(--color-text-secondary); }
+.input-wrap:has(.input-wrap__toggle) .input { padding-right: 3rem; }
+
+@media (max-height: 480px) and (orientation: landscape) {
+  .auth { --zone: 6.5rem; --logo-w: 5rem; }
+}
+
+.auth-form__switch { gap: var(--space-1); }
+.auth-form__link { font-weight: var(--fw-semibold); color: var(--color-text); text-decoration: underline; text-decoration-color: var(--color-primary-active); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.auth-form__link:hover { text-decoration-color: currentColor; }
+
+/* Keep browser autofill from tinting inputs blue */
+.input:-webkit-autofill, .input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-text);
+  box-shadow: 0 0 0 100px var(--color-surface) inset;
+  transition: background-color 9999s ease-out;
+}
+
+.input-wrap__suffix { position: absolute; right: var(--space-4); font-size: var(--fs-label); font-weight: var(--fw-medium); color: var(--color-text-secondary); pointer-events: none; }
+.input-wrap:has(.input-wrap__suffix) .input { padding-right: 3.25rem; }
+.auth-form .form-row { align-items: start; }
+.input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+.input[type="number"]::-webkit-outer-spin-button, .input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
