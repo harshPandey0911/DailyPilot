@@ -5,7 +5,8 @@ import {
   AtIcon, BackIcon, CalendarIcon, HourglassIcon, MailIcon, PhoneIcon, RulerIcon, ScaleIcon, UserIcon,
 } from "../../components/forms/Icons.jsx";
 import SocialAuth from "../../components/auth/SocialAuth.jsx";
-import { getHeightHelperUrl, signup } from "../../services/authService.js";
+import { getHeightHelperUrl } from "../../services/authService.js";
+import { loadDraft, saveDraft } from "../../services/profileDraft.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^\+?[0-9\s-]{10,15}$/;
@@ -57,9 +58,8 @@ export default function Signup() {
   const navigate = useNavigate();
   const formRef = useRef(null);
   const [errors, setErrors] = useState({});
-  const [formError, setFormError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [ageMode, setAgeMode] = useState("age"); // "age" | "dob"
+  const [draft] = useState(() => loadDraft() ?? {}); // set when coming back via "Edit details"
+  const [ageMode, setAgeMode] = useState(draft.dob ? "dob" : "age"); // "age" | "dob"
   const [heightUrl, setHeightUrl] = useState(null);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export default function Signup() {
     return () => { alive = false; };
   }, []);
 
-  async function onSubmit(e) {
+  function onSubmit(e) {
     e.preventDefault();
     const v = Object.fromEntries(new FormData(e.currentTarget));
     v.gender = v.gender ?? "";
@@ -76,32 +76,14 @@ export default function Signup() {
     v.dob = v.dob ?? "";
     const found = validate(v);
     setErrors(found);
-    setFormError("");
     const firstBad = Object.keys(found)[0];
     if (firstBad) {
       const el = formRef.current.elements[firstBad === "age" ? ageMode : firstBad];
       return (el.focus ? el : el[0]).focus();
     }
 
-    setLoading(true);
-    try {
-      await signup({
-        name: v.name.trim(),
-        username: v.username,
-        phone: v.phone.trim(),
-        email: v.email.trim() || undefined,
-        age: v.dob ? ageFromDob(v.dob) : Number(v.age),
-        dob: v.dob || undefined,
-        weightKg: Number(v.weight),
-        heightCm: Number(v.height),
-        gender: v.gender,
-      });
-      navigate("/home");
-    } catch (err) {
-      setFormError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    saveDraft({ ...v, name: v.name.trim(), phone: v.phone.trim(), email: v.email.trim() });
+    navigate("/verify-profile");
   }
 
   return (
@@ -113,17 +95,15 @@ export default function Signup() {
           <p className="text-secondary">Start your productivity journey with DailyPilot.</p>
         </div>
 
-        {formError && <div className="alert alert--danger" role="alert"><p className="alert__title">{formError}</p></div>}
-
-        <TextField id="name" label="Full name" icon={<UserIcon />} autoComplete="name" placeholder="Jane Doe" error={errors.name} />
+        <TextField id="name" defaultValue={draft.name} label="Full name" icon={<UserIcon />} autoComplete="name" placeholder="Jane Doe" error={errors.name} />
         <TextField
-          id="username" label="Username" icon={<AtIcon />} autoComplete="off" autoCapitalize="none" spellCheck={false}
+          id="username" defaultValue={draft.username} label="Username" icon={<AtIcon />} autoComplete="off" autoCapitalize="none" spellCheck={false}
           placeholder="jane.doe"
           onInput={(e) => { e.target.value = e.target.value.toLowerCase().replace(/\s/g, ""); }}
           error={errors.username}
         />
-        <TextField id="phone" label="Mobile number" icon={<PhoneIcon />} type="tel" autoComplete="tel" inputMode="tel" placeholder="+91 98765 43210" error={errors.phone} />
-        <TextField id="email" label="Email address (optional)" icon={<MailIcon />} type="email" autoComplete="email" inputMode="email" placeholder="you@example.com" error={errors.email} />
+        <TextField id="phone" defaultValue={draft.phone} label="Mobile number" icon={<PhoneIcon />} type="tel" autoComplete="tel" inputMode="tel" placeholder="+91 98765 43210" error={errors.phone} />
+        <TextField id="email" defaultValue={draft.email} label="Email address (optional)" icon={<MailIcon />} type="email" autoComplete="email" inputMode="email" placeholder="you@example.com" error={errors.email} />
 
         <fieldset className="field-group">
           <legend className="field__label">Age or date of birth</legend>
@@ -136,16 +116,16 @@ export default function Signup() {
             ))}
           </div>
           {ageMode === "age" ? (
-            <TextField key="age" id="age" label="Age" icon={<HourglassIcon />} type="number" inputMode="numeric" min="5" max="120" placeholder="25" error={errors.age} />
+            <TextField key="age" id="age" defaultValue={draft.age} label="Age" icon={<HourglassIcon />} type="number" inputMode="numeric" min="5" max="120" placeholder="25" error={errors.age} />
           ) : (
-            <TextField key="dob" id="dob" label="Date of birth" icon={<CalendarIcon />} type="date" max={todayISO()} error={errors.age} />
+            <TextField key="dob" id="dob" defaultValue={draft.dob} label="Date of birth" icon={<CalendarIcon />} type="date" max={todayISO()} error={errors.age} />
           )}
         </fieldset>
 
-        <TextField id="weight" label="Weight" icon={<ScaleIcon />} type="number" inputMode="decimal" min="20" max="300" step="0.1" placeholder="65" suffix="kg" error={errors.weight} />
+        <TextField id="weight" defaultValue={draft.weight} label="Weight" icon={<ScaleIcon />} type="number" inputMode="decimal" min="20" max="300" step="0.1" placeholder="65" suffix="kg" error={errors.weight} />
 
         <div className="field">
-          <TextField id="height" label="Height" icon={<RulerIcon />} type="number" inputMode="decimal" min="50" max="250" step="0.1" placeholder="170" suffix="cm" error={errors.height} />
+          <TextField id="height" defaultValue={draft.height} label="Height" icon={<RulerIcon />} type="number" inputMode="decimal" min="50" max="250" step="0.1" placeholder="170" suffix="cm" error={errors.height} />
           <p className="field__hint">
             Don&apos;t know your height?{" "}
             {heightUrl ? (
@@ -161,7 +141,7 @@ export default function Signup() {
           <div className="choice-group">
             {GENDERS.map((g) => (
               <label key={g.value} className="choice">
-                <input type="radio" name="gender" value={g.value} aria-invalid={errors.gender ? "true" : undefined} />
+                <input type="radio" name="gender" value={g.value} defaultChecked={draft.gender === g.value} aria-invalid={errors.gender ? "true" : undefined} />
                 <span>{g.label}</span>
               </label>
             ))}
@@ -169,8 +149,8 @@ export default function Signup() {
           {errors.gender && <span className="field__error" role="alert">{errors.gender}</span>}
         </fieldset>
 
-        <button className={`btn btn--secondary btn--lg btn--block ${loading ? "is-loading" : ""}`} type="submit" disabled={loading}>
-          Create account
+        <button className="btn btn--secondary btn--lg btn--block" type="submit">
+          Continue
         </button>
 
         <SocialAuth />
