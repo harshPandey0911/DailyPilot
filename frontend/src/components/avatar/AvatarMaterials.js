@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 /** Small procedural canvas textures so we need no image assets. */
-function canvasTexture(size, draw, repeat) {
+function canvasTexture(size, draw, repeat, srgb = false) {
   const c = document.createElement("canvas");
   c.width = c.height = size;
   draw(c.getContext("2d"), size);
@@ -9,64 +9,136 @@ function canvasTexture(size, draw, repeat) {
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.repeat.set(repeat[0], repeat[1]);
   t.anisotropy = 4;
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 
-const knitBump = () =>
-  canvasTexture(64, (g, s) => {
-    g.fillStyle = "#808080"; g.fillRect(0, 0, s, s);
-    g.strokeStyle = "#b8b8b8"; g.lineWidth = 2;
-    for (let i = -s; i < s * 2; i += 8) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + s, s); g.stroke(); }
-    g.strokeStyle = "#555"; g.lineWidth = 1;
-    for (let i = -s; i < s * 2; i += 8) { g.beginPath(); g.moveTo(i + 4, s); g.lineTo(i + 4 + s, 0); g.stroke(); }
-  }, [10, 8]);
+/** Fine twill/cotton weave bump texture. */
+const twillBump = () =>
+  canvasTexture(128, (g, s) => {
+    g.fillStyle = "#808080";
+    g.fillRect(0, 0, s, s);
+    for (let y = 0; y < s; y += 2) {
+      for (let x = 0; x < s; x += 2) {
+        const diag = ((x + y) % 8) < 4 ? 14 : -14;
+        const noise = (Math.random() - 0.5) * 14;
+        const v = Math.max(40, Math.min(215, 128 + diag + noise));
+        g.fillStyle = `rgb(${v},${v},${v})`;
+        g.fillRect(x, y, 2, 2);
+      }
+    }
+  }, [18, 18]);
+
+/** Fine woven cotton/twill fabric albedo + bump without circular blotches. */
+const wovenFabricAlbedo = (r0, g0, b0, contrast, repeat) =>
+  canvasTexture(256, (g, s) => {
+    const img = g.createImageData(s, s);
+    const d = img.data;
+    for (let y = 0; y < s; y++) {
+      for (let x = 0; x < s; x++) {
+        const warp = ((x % 4) < 2 ? 1 : -1) * contrast;
+        const weft = ((y % 4) < 2 ? 1 : -1) * contrast * 0.7;
+        const twill = (((x + y) % 8) < 4 ? 1 : -1) * contrast * 0.8;
+        const slub = (Math.sin(x * 0.17 + y * 0.05) + Math.sin(y * 0.23 - x * 0.04)) * contrast * 0.5;
+        const grain = (Math.random() - 0.5) * contrast * 1.4;
+        const delta = warp + weft + twill + slub + grain;
+        const i = (y * s + x) * 4;
+        d[i] = Math.max(0, Math.min(255, r0 + delta));
+        d[i + 1] = Math.max(0, Math.min(255, g0 + delta));
+        d[i + 2] = Math.max(0, Math.min(255, b0 + delta));
+        d[i + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+  }, repeat, true);
+
+/** Subtle skin micro-grain so body skin doesn't look like smooth plastic under studio lighting. */
+const skinBump = () =>
+  canvasTexture(256, (g, s) => {
+    const img = g.createImageData(s, s);
+    const d = img.data;
+    for (let y = 0; y < s; y++) {
+      for (let x = 0; x < s; x++) {
+        const pore = ((x * 13 + y * 29) % 17 === 0) ? -14 : 0;
+        const v = 128 + pore + (Math.random() - 0.5) * 18;
+        const i = (y * s + x) * 4;
+        d[i] = d[i + 1] = d[i + 2] = Math.max(0, Math.min(255, v));
+        d[i + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+  }, [6, 6]);
 
 const hairBump = () =>
-  canvasTexture(128, (g, s) => {
+  canvasTexture(256, (g, s) => {
     g.fillStyle = "#808080"; g.fillRect(0, 0, s, s);
-    for (let i = 0; i < 160; i++) {
-      const v = 90 + Math.random() * 120;
-      g.strokeStyle = `rgb(${v},${v},${v})`; g.lineWidth = 1 + Math.random();
+    for (let i = 0; i < 420; i++) {
+      const v = 70 + Math.random() * 145;
+      g.strokeStyle = `rgb(${v},${v},${v})`; g.lineWidth = 0.8 + Math.random() * 1.2;
       const x = Math.random() * s;
-      g.beginPath(); g.moveTo(x, 0); g.lineTo(x + (Math.random() - 0.5) * 6, s); g.stroke();
+      g.beginPath(); g.moveTo(x, 0); g.lineTo(x + (Math.random() - 0.5) * 4, s); g.stroke();
     }
-  }, [3, 6]);
+  }, [5, 8]);
 
-export const SKIN_TONE = "#dfa987";
+export const SKIN_TONE = "#cc9472";
 
 /** All avatar materials. `clip` = planes that hide everything below the floor (black-hole emergence). */
 export function createMaterials({ female, clip }) {
-  const textures = [knitBump(), hairBump()];
-  const [knit, hairTex] = textures;
+  const shirtMap = wovenFabricAlbedo(female ? 196 : 228, female ? 220 : 230, female ? 110 : 228, 4, [6, 6]);
+  const pantsMap = wovenFabricAlbedo(female ? 38 : 54, female ? 42 : 68, female ? 46 : 82, 6, [7, 10]);
+  const twill = twillBump();
+  const skinTex = skinBump();
+  const hairTex = hairBump();
+  const textures = [shirtMap, pantsMap, twill, skinTex, hairTex];
   const base = { clippingPlanes: clip, clipShadows: true };
 
-  const skin = new THREE.MeshPhysicalMaterial({ ...base, color: SKIN_TONE, roughness: 0.55, sheen: 0.25, sheenRoughness: 0.5, sheenColor: new THREE.Color("#ffb7a0") });
-  const skinFace = skin.clone();
-  skinFace.vertexColors = true;
-  skinFace.clippingPlanes = clip;
+  const skin = new THREE.MeshPhysicalMaterial({
+    ...base,
+    color: SKIN_TONE,
+    roughness: 0.56,
+    bumpMap: skinTex,
+    bumpScale: 0.0014,
+    sheen: 0.18,
+    sheenRoughness: 0.65,
+    sheenColor: new THREE.Color("#f0b09a"),
+    clearcoat: 0.04,
+    clearcoatRoughness: 0.5,
+  });
 
   const fabric = (color, extra = {}) =>
-    new THREE.MeshPhysicalMaterial({ ...base, color, roughness: 0.88, bumpMap: knit, bumpScale: 1.2, sheen: 0.18, sheenRoughness: 0.9, sheenColor: new THREE.Color("#8a8a8a"), ...extra });
+    new THREE.MeshPhysicalMaterial({
+      ...base,
+      color,
+      roughness: 0.9,
+      bumpMap: twill,
+      bumpScale: 0.0022,
+      sheen: 0.15,
+      sheenRoughness: 0.9,
+      sheenColor: new THREE.Color("#888888"),
+      ...extra,
+    });
 
   const mats = {
     skin,
-    skinFace,
-    top: fabric(female ? "#c8ea5e" : "#1b1e1c"),
-    topRib: fabric(female ? "#a5cc32" : "#0e100f"),
-    bottom: fabric(female ? "#16191a" : "#46563a"),
-    bottomRib: fabric(female ? "#0c0e0f" : "#2f3b27"),
-    hair: new THREE.MeshStandardMaterial({ ...base, color: female ? "#3b2417" : "#2a1b12", roughness: 0.5 }),
-    brow: new THREE.MeshStandardMaterial({ ...base, color: "#2a1b12", roughness: 0.8 }),
-    eyeWhite: new THREE.MeshStandardMaterial({ ...base, color: "#f4f1ec", roughness: 0.25 }),
-    iris: new THREE.MeshStandardMaterial({ ...base, color: "#5a3a22", roughness: 0.3 }),
-    pupil: new THREE.MeshStandardMaterial({ ...base, color: "#050505", roughness: 0.2 }),
-    lip: new THREE.MeshStandardMaterial({ ...base, color: female ? "#c4646a" : "#b97370", roughness: 0.4 }),
-    mouth: new THREE.MeshStandardMaterial({ ...base, color: "#5a2a28", roughness: 0.6 }),
-    shoeUpper: new THREE.MeshStandardMaterial({ ...base, color: female ? "#f2f3ee" : "#f2f3ee", roughness: 0.6, bumpMap: knit, bumpScale: 0.6 }),
-    shoeAccent: new THREE.MeshStandardMaterial({ ...base, color: "#c8ea5e", roughness: 0.5 }),
-    sole: new THREE.MeshStandardMaterial({ ...base, color: "#ffffff", roughness: 0.35 }),
-    strap: new THREE.MeshStandardMaterial({ ...base, color: "#111713", roughness: 0.6 }),
-    watch: new THREE.MeshStandardMaterial({ ...base, color: "#c8ea5e", roughness: 0.2, metalness: 0.4 }),
+    top: fabric("#ffffff", { map: shirtMap }),
+    topRib: fabric(female ? "#aec45a" : "#cfd3d1"),
+    bottom: fabric("#ffffff", { map: pantsMap }),
+    bottomRib: fabric(female ? "#1b1e21" : "#2b3743"),
+    hair: new THREE.MeshPhysicalMaterial({
+      ...base,
+      color: female ? "#331e13" : "#22160f",
+      roughness: 0.48,
+      bumpMap: hairTex,
+      bumpScale: 0.004,
+      sheen: 0.25,
+      sheenRoughness: 0.45,
+      sheenColor: new THREE.Color("#6a5244"),
+    }),
+    shoeUpper: new THREE.MeshStandardMaterial({ ...base, color: "#dcded8", roughness: 0.68, bumpMap: twill, bumpScale: 0.0018 }),
+    shoeAccent: new THREE.MeshStandardMaterial({ ...base, color: "#3b4248", roughness: 0.6 }),
+    sole: new THREE.MeshStandardMaterial({ ...base, color: "#f4f4f0", roughness: 0.42 }),
+    strap: new THREE.MeshStandardMaterial({ ...base, color: "#141816", roughness: 0.55 }),
+    watch: new THREE.MeshStandardMaterial({ ...base, color: "#2d3330", roughness: 0.25, metalness: 0.65 }),
   };
 
   mats.dispose = () => {

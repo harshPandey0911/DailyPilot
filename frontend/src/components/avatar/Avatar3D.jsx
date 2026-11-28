@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { buildAvatar } from "./buildAvatar.js";
-import { glbExists, loadGlbAvatar } from "./glbAvatar.js";
+import { cc0AvatarExists, glbExists, loadCc0Avatar, loadGlbAvatar } from "./glbAvatar.js";
 import { buildBlackHole } from "./buildBlackHole.js";
 import { createLighting } from "./AvatarLighting.js";
 import { createControls } from "./AvatarControls.js";
@@ -66,7 +66,7 @@ export default function Avatar3D({ gender, heightCm, weightKg }) {
     const stage = new THREE.Group();
     scene.add(stage);
 
-    // Prefer an artist-made model (public/avatars/male.glb | female.glb); otherwise the procedural avatar.
+    // Prefer custom override (public/avatars/male.glb | female.glb), then built-in CC0 character, then procedural fallback.
     let avatar = null;
     let riseStart = null;
     let riseEnd = Infinity;
@@ -77,8 +77,9 @@ export default function Avatar3D({ gender, heightCm, weightKg }) {
       let built = null;
       try {
         if (await glbExists(url)) built = await loadGlbAvatar(url, profileRef.current, opts);
+        else if (await cc0AvatarExists()) built = await loadCc0Avatar(profileRef.current, opts);
       } catch (err) {
-        console.warn("Could not load", url, "- using the built-in avatar.", err);
+        console.warn("Could not load 3D avatar model - using the built-in avatar.", err);
       }
       if (!built) built = buildAvatar(profileRef.current, opts);
       if (cancelled) { built.dispose(); return; }

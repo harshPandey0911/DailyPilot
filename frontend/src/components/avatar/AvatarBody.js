@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { loft, sampleRings, swapGeometry, mergeGeometries } from "./geometry.js";
 
 /** Pivot heights (metres, feet at y = 0). */
-export const P = { chest: 1.2, shoulder: 1.38, hip: 0.93, neck: 1.5 };
+export const P = { chest: 1.2, shoulder: 1.365, hip: 0.93, neck: 1.5 };
 
 /**
  * Anatomy: smooth cross-section profiles for torso, arms and legs.
@@ -38,11 +38,11 @@ export function anatomy({ female, fat: f, muscle: m }) {
   ];
 
   const upperKeys = [
-    [0.035, 0.046 * armK, 0.046 * armK, 0, 0, 2],
-    [0.0, 0.066 * armK * (1 + m * 0.1), 0.064 * armK, 0, 0, 2],
-    [-0.09, 0.056 * armK * (1 + m * 0.12), 0.058 * armK * (1 + m * 0.1), 0, 0.004, 2],
-    [-0.2, 0.046 * armK, 0.048 * armK, 0, 0, 2],
-    [-0.29, 0.04 * armK, 0.042 * armK, 0, 0, 2],
+    [0.022, 0.030 * armK, 0.032 * armK, 0, 0, 2],
+    [0.0, 0.052 * armK * (1 + m * 0.08), 0.052 * armK, 0, 0, 2],
+    [-0.085, 0.050 * armK * (1 + m * 0.1), 0.052 * armK * (1 + m * 0.08), 0, 0.004, 2],
+    [-0.2, 0.044 * armK, 0.046 * armK, 0, 0, 2],
+    [-0.29, 0.039 * armK, 0.041 * armK, 0, 0, 2],
   ];
   const lowerKeys = [
     [0.02, 0.04 * armK, 0.042 * armK, 0, 0, 2],
@@ -62,8 +62,8 @@ export function anatomy({ female, fat: f, muscle: m }) {
   ];
 
   return {
-    shoulderX: (F ? 0.168 : 0.205) * shK,
-    hipX: F ? 0.088 : 0.084,
+    shoulderX: (F ? 0.146 : 0.172) * shK,
+    hipX: F ? 0.09 : 0.092,
     torso: sampleRings(torsoKeys, 56),
     upper: sampleRings(upperKeys, 22),
     lower: sampleRings(lowerKeys, 18),
@@ -174,11 +174,13 @@ export function createBody(mats, shape) {
       A.elbow.position.y = a.elbowY;
       A.lower.geometry = lo;
       A.wrist.position.y = a.wristY;
-      const r = a.upper[0].rx * 1.06;
-      A.deltoid.scale.set(r, r * 1.05, r);
-      const e = a.lower[0].rx * 1.04;
+      const r = a.upper[1].rx * 0.86;
+      A.deltoid.scale.set(r, r * 0.88, r);
+      A.deltoid.position.set(0, -0.008, 0);
+      const e = a.lower[0].rx * 1.02;
       A.elbowCap.scale.set(e, e, e);
       L.leg.position.set(side * a.hipX, P.hip, 0);
+      L.leg.rotation.z = side * 0.032;
       L.skin.geometry = lg;
     }
     return a;
