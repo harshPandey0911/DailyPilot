@@ -2,7 +2,7 @@ const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 
 /** Drag / touch to rotate 360°, pinch or wheel to zoom, auto-rotate when idle. */
 export function createControls(dom, { reduceMotion }) {
-  let yaw = 0, vel = 0, zoom = 1, zoomTarget = 1, idle = 0;
+  let yaw = -0.22, vel = 0, zoom = 1, zoomTarget = 1, idle = 0;
   let dragging = false, lastX = 0, pinchStart = 0, zoomStart = 1;
   const pointers = new Map();
   const dist = () => { const [a, b] = [...pointers.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };

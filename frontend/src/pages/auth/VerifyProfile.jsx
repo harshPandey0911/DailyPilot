@@ -1,15 +1,22 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import logo from "../../assets/DailyPilot Logo.png";
 import { AtIcon, CalendarIcon, HourglassIcon, MailIcon, PhoneIcon, RulerIcon, ScaleIcon, TargetIcon, UserIcon } from "../../components/forms/Icons.jsx";
 import { clearDraft, loadDraft } from "../../services/profileDraft.js";
 import { signup } from "../../services/authService.js";
+import { generateRealisticPortrait, getPortraitStatus } from "../../services/avatarService.js";
 
 // three.js is large — load it only when this page is opened.
 const Avatar3D = lazy(() => import("../../components/avatar/Avatar3D.jsx"));
 
 const AREA_LABEL = { fitness: "Fitness", study: "Study", goals: "Daily Goals" };
 const GENDER_LABEL = { male: "Male", female: "Female", other: "Other" };
+const POSES = [
+  { id: "relaxed", label: "Relaxed" },
+  { id: "athletic", label: "Athletic" },
+  { id: "crossed", label: "Crossed" },
+  { id: "wave", label: "Wave" },
+];
 
 function ageFromDob(dob) {
   const d = new Date(dob);
@@ -24,8 +31,21 @@ const formatDob = (dob) => new Date(dob).toLocaleDateString(undefined, { day: "n
 export default function VerifyProfile() {
   const navigate = useNavigate();
   const [draft] = useState(loadDraft);
+  const captureRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [viewMode, setViewMode] = useState("3d"); // "3d" | "photo"
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const [portraitEnabled, setPortraitEnabled] = useState(false);
+  const [pose, setPose] = useState("relaxed");
+
+  useEffect(() => {
+    const ac = new AbortController();
+    getPortraitStatus({ signal: ac.signal }).then((s) => setPortraitEnabled(Boolean(s?.portraitEnabled)));
+    return () => ac.abort();
+  }, []);
 
   if (!draft) return <Navigate to="/signup" replace />;
 
@@ -45,6 +65,27 @@ export default function VerifyProfile() {
     { icon: <RulerIcon />, label: "Height", value: `${heightCm} cm` },
     { icon: <UserIcon />, label: "Gender", value: GENDER_LABEL[draft.gender] ?? draft.gender },
   ];
+
+  async function generatePhoto() {
+    setPhotoLoading(true);
+    setPhotoError("");
+    try {
+      const snapshotBase64 = captureRef.current?.() || undefined;
+      const data = await generateRealisticPortrait({
+        gender: draft.gender,
+        age,
+        heightCm,
+        weightKg,
+        snapshotBase64,
+      });
+      setPhotoUrl(data.imageDataUrl);
+      setViewMode("photo");
+    } catch (err) {
+      setPhotoError(err.message);
+    } finally {
+      setPhotoLoading(false);
+    }
+  }
 
   async function confirm() {
     setLoading(true);
@@ -79,10 +120,61 @@ export default function VerifyProfile() {
 
       <div className="verify__grid">
         <section className="verify__stage" aria-label="Your avatar">
-          <Suspense fallback={<div className="verify__loading"><span className="spinner" role="status" aria-label="Loading avatar" /></div>}>
-            <Avatar3D gender={draft.gender} heightCm={heightCm} weightKg={weightKg} />
-          </Suspense>
-          <p className="verify__hint">Drag to rotate</p>
+          <div className="verify__media">
+            <div className={`verify__canvas ${viewMode === "photo" && photoUrl ? "is-hidden" : ""}`}>
+              <Suspense fallback={<div className="verify__loading"><span className="spinner" role="status" aria-label="Loading avatar" /></div>}>
+                <Avatar3D gender={draft.gender} heightCm={heightCm} weightKg={weightKg} pose={pose} captureRef={captureRef} />
+              </Suspense>
+            </div>
+            {viewMode === "photo" && photoUrl && (
+              <img className="verify__photo" src={photoUrl} alt="Photorealistic studio portrait preview" />
+            )}
+          </div>
+          {!(viewMode === "photo" && photoUrl) && (
+            <div className="verify__poses" role="group" aria-label="Avatar posture">
+              {POSES.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={`verify__pose ${pose === p.id ? "is-active" : ""}`}
+                  aria-pressed={pose === p.id}
+                  onClick={() => setPose(p.id)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="verify__stage-bar">
+            <p className="verify__hint">{viewMode === "photo" && photoUrl ? "AI studio portrait" : "Drag to rotate"}</p>
+            {portraitEnabled && (
+              <div className="verify__stage-actions">
+                {photoUrl && (
+                  <button
+                    type="button"
+                    className="btn btn--outline btn--sm"
+                    onClick={() => setViewMode((m) => (m === "photo" ? "3d" : "photo"))}
+                    disabled={photoLoading}
+                  >
+                    {viewMode === "photo" ? "Show 3D view" : "Show real photo"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={`btn btn--primary btn--sm ${photoLoading ? "is-loading" : ""}`}
+                  onClick={generatePhoto}
+                  disabled={photoLoading}
+                >
+                  {photoUrl ? "Regenerate photo" : "Generate real photo"}
+                </button>
+              </div>
+            )}
+          </div>
+          {photoError && (
+            <div className="alert alert--danger verify__stage-error" role="alert">
+              <p className="alert__title">{photoError}</p>
+            </div>
+          )}
         </section>
 
         <section className="verify__details" aria-labelledby="verify-title">

@@ -287,16 +287,285 @@ function createEnhancedSkinMaps(albedoTex, normalTex, isFemale) {
   return { map, normalMap, roughnessMap };
 }
 
-function createIdleAnimator(model, animations, reduceMotion) {
-  if (!animations?.length || reduceMotion) return null;
+const VALID_POSES = new Set(["relaxed", "athletic", "crossed", "wave"]);
+const normalizePose = (pose) => (VALID_POSES.has(pose) ? pose : "relaxed");
+
+const ARM_POSE_BONES = [
+  "clavicle_l", "clavicle_r",
+  "upperarm_l", "upperarm_r",
+  "lowerarm_l", "lowerarm_r",
+  "hand_l", "hand_r",
+];
+const FINGER_NAMES = ["thumb", "index", "middle", "ring", "pinky"];
+const FINGER_BONES = [];
+for (const side of ["l", "r"]) {
+  for (const f of FINGER_NAMES) {
+    for (const j of ["01", "02", "03"]) FINGER_BONES.push(`${f}_${j}_${side}`);
+  }
+}
+const ALL_POSE_BONES = [...ARM_POSE_BONES, ...FINGER_BONES];
+
+const _axis = new THREE.Vector3();
+const _qTmp = new THREE.Quaternion();
+const _parentWorldQ = new THREE.Quaternion();
+const _rootWorldQ = new THREE.Quaternion();
+const _eulerTmp = new THREE.Euler();
+
+function rotateModelAxis(bones, modelRoot, name, ax, ay, az, angle) {
+  const b = bones.get(name);
+  if (!b || !b.parent || Math.abs(angle) < 1e-5) return;
+  b.parent.updateWorldMatrix(true, false);
+  b.parent.getWorldQuaternion(_parentWorldQ);
+  modelRoot.getWorldQuaternion(_rootWorldQ);
+  _axis.set(ax, ay, az).normalize().applyQuaternion(_rootWorldQ).applyQuaternion(_parentWorldQ.invert());
+  _qTmp.setFromAxisAngle(_axis, angle);
+  b.quaternion.premultiply(_qTmp);
+}
+
+function rotateLocalAxis(bones, name, ax, ay, az, angle) {
+  const b = bones.get(name);
+  if (!b || Math.abs(angle) < 1e-5) return;
+  _axis.set(ax, ay, az).normalize();
+  _qTmp.setFromAxisAngle(_axis, angle);
+  b.quaternion.multiply(_qTmp);
+}
+
+function curlHand(bones, restQuats, side, amount) {
+  const specs = [
+    ["index", 0.24, 0.34, 0.24],
+    ["middle", 0.34, 0.44, 0.32],
+    ["ring", 0.44, 0.54, 0.40],
+    ["pinky", 0.52, 0.62, 0.46],
+  ];
+  for (const [finger, a1, a2, a3] of specs) {
+    for (const [j, ang] of [["01", a1], ["02", a2], ["03", a3]]) {
+      const name = `${finger}_${j}_${side}`;
+      const b = bones.get(name);
+      const rq = restQuats.get(name);
+      if (b && rq) {
+        b.quaternion.copy(rq).multiply(_qTmp.setFromAxisAngle(_axis.set(1, 0, 0), ang * amount));
+      }
+    }
+  }
+  const s = side === "l" ? 1 : -1;
+  for (const [j, rx, rz] of [["01", 0.14, s * -0.12], ["02", 0.22, 0], ["03", 0.18, 0]]) {
+    const name = `thumb_${j}_${side}`;
+    const b = bones.get(name);
+    const rq = restQuats.get(name);
+    if (b && rq) {
+      _eulerTmp.set(rx * amount, 0, rz * amount);
+      b.quaternion.copy(rq).multiply(_qTmp.setFromEuler(_eulerTmp));
+    }
+  }
+}
+
+function applyTargetPose(bones, restQuats, model, pose, wavePhase) {
+  curlHand(bones, restQuats, "l", pose === "athletic" ? 0.90 : pose === "crossed" ? 0.88 : 0.68);
+  curlHand(bones, restQuats, "r", pose === "athletic" ? 0.90 : pose === "crossed" ? 0.88 : pose === "wave" ? 0.30 : 0.68);
+
+  if (pose === "relaxed") {
+    rotateModelAxis(bones, model, "upperarm_l", 0, 0, 1, 0.07);
+    rotateModelAxis(bones, model, "upperarm_r", 0, 0, -1, 0.07);
+    return;
+  }
+
+  if (pose === "athletic") {
+    rotateModelAxis(bones, model, "clavicle_l", 0, 0, 1, 0.05);
+    rotateModelAxis(bones, model, "upperarm_l", 0, 0, 1, 0.64);
+    rotateModelAxis(bones, model, "upperarm_l", 1, 0, 0, 0.22);
+    rotateLocalAxis(bones, "upperarm_l", 0, 1, 0, 1.08);
+    rotateLocalAxis(bones, "lowerarm_l", 1, 0, 0, 1.32);
+    rotateLocalAxis(bones, "lowerarm_l", 0, 1, 0, -0.32);
+    rotateLocalAxis(bones, "hand_l", 0, 0, 1, 0.42);
+
+    rotateModelAxis(bones, model, "clavicle_r", 0, 0, -1, 0.05);
+    rotateModelAxis(bones, model, "upperarm_r", 0, 0, -1, 0.64);
+    rotateModelAxis(bones, model, "upperarm_r", 1, 0, 0, 0.22);
+    rotateLocalAxis(bones, "upperarm_r", 0, 1, 0, -1.08);
+    rotateLocalAxis(bones, "lowerarm_r", 1, 0, 0, 1.32);
+    rotateLocalAxis(bones, "lowerarm_r", 0, 1, 0, 0.32);
+    rotateLocalAxis(bones, "hand_r", 0, 0, -1, 0.42);
+    return;
+  }
+
+  if (pose === "crossed") {
+    rotateModelAxis(bones, model, "clavicle_l", 0, 0, 1, -0.04);
+    rotateModelAxis(bones, model, "clavicle_l", 0, 1, 0, -0.10);
+    rotateModelAxis(bones, model, "upperarm_l", 1, 0, 0, -0.44);
+    rotateModelAxis(bones, model, "upperarm_l", 0, 0, 1, 0.24);
+    rotateLocalAxis(bones, "upperarm_l", 0, 1, 0, 1.08);
+    rotateLocalAxis(bones, "lowerarm_l", 1, 0, 0, 1.44);
+    rotateLocalAxis(bones, "lowerarm_l", 0, 1, 0, -0.16);
+    rotateLocalAxis(bones, "hand_l", 0, 1, 0, -0.30);
+    rotateLocalAxis(bones, "hand_l", 0, 0, 1, 0.22);
+
+    rotateModelAxis(bones, model, "clavicle_r", 0, 0, -1, 0.04);
+    rotateModelAxis(bones, model, "clavicle_r", 0, 1, 0, 0.10);
+    rotateModelAxis(bones, model, "upperarm_r", 1, 0, 0, -0.62);
+    rotateModelAxis(bones, model, "upperarm_r", 0, 0, -1, 0.26);
+    rotateLocalAxis(bones, "upperarm_r", 0, 1, 0, -1.08);
+    rotateLocalAxis(bones, "lowerarm_r", 1, 0, 0, 1.44);
+    rotateLocalAxis(bones, "lowerarm_r", 0, 1, 0, 0.16);
+    rotateLocalAxis(bones, "hand_r", 0, 1, 0, 0.30);
+    rotateLocalAxis(bones, "hand_r", 0, 0, -1, 0.20);
+    return;
+  }
+
+  // "wave": casual shoulder-level wave with relaxed upper arm (prevents sleeve clipping)
+  rotateModelAxis(bones, model, "upperarm_l", 0, 0, 1, 0.07);
+  rotateModelAxis(bones, model, "clavicle_r", 0, 0, -1, 0.10);
+  rotateModelAxis(bones, model, "upperarm_r", 0, 0, -1, 0.34);
+  rotateModelAxis(bones, model, "upperarm_r", 1, 0, 0, -0.68);
+  rotateLocalAxis(bones, "upperarm_r", 0, 1, 0, 0.45);
+  rotateLocalAxis(bones, "lowerarm_r", 1, 0, 0, 1.56 + wavePhase * 0.08);
+  rotateLocalAxis(bones, "lowerarm_r", 0, 1, 0, -0.45);
+  rotateLocalAxis(bones, "hand_r", 0, 1, 0, -0.48);
+  rotateLocalAxis(bones, "hand_r", 1, 0, 0, -0.06);
+  rotateLocalAxis(bones, "hand_r", 0, 0, -1, wavePhase * 0.16);
+}
+
+/** Smoothly blends posture deltas and relaxed finger curls on top of the live idle animation. */
+function createPoseController(bones, restQuats, model, initialPose, reduceMotion) {
+  let targetPose = normalizePose(initialPose);
+  let initialized = false;
+  const baseQuats = new Map(ALL_POSE_BONES.map((n) => [n, new THREE.Quaternion()]));
+  for (const n of ARM_POSE_BONES) {
+    const b = bones.get(n);
+    if (b) baseQuats.get(n).copy(b.quaternion);
+  }
+  const curDeltas = new Map(ALL_POSE_BONES.map((n) => [n, new THREE.Quaternion()]));
+  const targetDelta = new THREE.Quaternion();
+
+  return {
+    setPose(next) { targetPose = normalizePose(next); },
+    getPose() { return targetPose; },
+    // Undo last frame's posture delta before AnimationMixer runs so static clip tracks never compound.
+    restoreBase() {
+      if (!initialized) return;
+      for (const name of ARM_POSE_BONES) {
+        const b = bones.get(name);
+        if (b) b.quaternion.copy(baseQuats.get(name));
+      }
+      for (const name of FINGER_BONES) {
+        const rq = restQuats.get(name);
+        const b = bones.get(name);
+        if (b && rq) b.quaternion.copy(rq);
+      }
+    },
+    apply(t, dt) {
+      for (const name of ARM_POSE_BONES) {
+        const b = bones.get(name);
+        if (b) baseQuats.get(name).copy(b.quaternion);
+      }
+      for (const name of FINGER_BONES) {
+        const rq = restQuats.get(name);
+        const b = bones.get(name);
+        if (b && rq) {
+          b.quaternion.copy(rq);
+          baseQuats.get(name).copy(rq);
+        }
+      }
+
+      const wavePhase = targetPose === "wave" && !reduceMotion ? Math.sin(t * 4.2) : 0;
+      model.updateMatrixWorld(true);
+      applyTargetPose(bones, restQuats, model, targetPose, wavePhase);
+
+      const alpha = !initialized || reduceMotion ? 1 : Math.min(1, 1 - Math.exp(-9 * Math.max(dt, 0)));
+      initialized = true;
+
+      for (const name of ALL_POSE_BONES) {
+        const b = bones.get(name);
+        if (!b) continue;
+        const base = baseQuats.get(name);
+        const cur = curDeltas.get(name);
+        targetDelta.copy(base).invert().multiply(b.quaternion);
+        if (alpha >= 1) cur.copy(targetDelta);
+        else cur.slerp(targetDelta, alpha);
+        b.quaternion.copy(base).multiply(cur);
+      }
+    },
+  };
+}
+
+/**
+ * Plays natural idle animation clips and crossfades between breathing, subtle looking, and
+ * fidgeting (only when in the relaxed posture) unless reduced-motion is preferred.
+ */
+function createIdleController(model, animations, reduceMotion) {
+  if (!animations?.length) return null;
   const mixer = new THREE.AnimationMixer(model);
-  const clip =
-    animations.find((a) => /^idle$/i.test(a.name)) ||
+  const byName = new Map();
+  for (const clip of animations) byName.set(clip.name.toLowerCase(), clip);
+
+  const primary =
+    byName.get("idle") ||
     animations.find((a) => /idle|stand|breath/i.test(a.name)) ||
     animations[0];
-  mixer.clipAction(clip).play();
+
+  const sequenceNames = ["idle", "idle_breathe", "idle_look", "idle_breathe", "idle_fidget"].filter(
+    (name) => byName.has(name),
+  );
+  if (!sequenceNames.length) sequenceNames.push(primary.name.toLowerCase());
+
+  const actions = new Map();
+  const getAction = (clip) => {
+    const key = clip.name.toLowerCase();
+    if (!actions.has(key)) actions.set(key, mixer.clipAction(clip));
+    return actions.get(key);
+  };
+
+  let curKey = primary.name.toLowerCase();
+  let curAction = getAction(primary);
+  curAction.play();
   mixer.update(0.05);
-  return mixer;
+
+  if (reduceMotion) {
+    return {
+      mixer,
+      setAllowFidget() {},
+      update() {},
+    };
+  }
+
+  let allowFidget = true;
+  let seqIdx = 0;
+  let elapsed = 0;
+
+  const fadeTo = (nextKey, fadeSec = 0.75) => {
+    const clip = byName.get(nextKey);
+    if (!clip || nextKey === curKey) return;
+    const nextAction = getAction(clip);
+    nextAction.enabled = true;
+    nextAction.reset().play();
+    curAction.crossFadeTo(nextAction, fadeSec, true);
+    curAction = nextAction;
+    curKey = nextKey;
+    elapsed = 0;
+  };
+
+  return {
+    mixer,
+    setAllowFidget(allow) {
+      allowFidget = allow;
+      if (!allow && curKey === "idle_fidget") {
+        fadeTo(byName.has("idle_breathe") ? "idle_breathe" : primary.name.toLowerCase(), 0.45);
+      }
+    },
+    update(dt) {
+      mixer.update(dt);
+      if (sequenceNames.length <= 1) return;
+      elapsed += dt;
+      const clipDur = curAction.getClip().duration || 8;
+      if (elapsed >= Math.max(4.5, clipDur - 0.9)) {
+        seqIdx = (seqIdx + 1) % sequenceNames.length;
+        let nextKey = sequenceNames[seqIdx];
+        if (!allowFidget && nextKey === "idle_fidget") {
+          nextKey = byName.has("idle_breathe") ? "idle_breathe" : primary.name.toLowerCase();
+        }
+        fadeTo(nextKey, 0.75);
+      }
+    },
+  };
 }
 
 function disposeLoaded(model, mixer, textures) {
@@ -316,7 +585,7 @@ export async function loadGlbAvatar(url, profile, { clip, reduceMotion }) {
   const gltf = await new GLTFLoader().loadAsync(url);
   const model = gltf.scene;
   const { morphs, textures } = prepareModel(model, clip);
-  const mixer = createIdleAnimator(model, gltf.animations, reduceMotion);
+  const idle = createIdleController(model, gltf.animations, reduceMotion);
   const { root, sizer } = fitModelToStage(model);
 
   const target = shapeFrom(profile);
@@ -344,10 +613,10 @@ export async function loadGlbAvatar(url, profile, { clip, reduceMotion }) {
       cur.heightScale += (target.heightScale - cur.heightScale) * e;
       applyBuild();
       root.scale.setScalar(cur.heightScale);
-      mixer?.update(dt);
+      idle?.update(dt);
     },
     get heightScale() { return cur.heightScale; },
-    dispose() { disposeLoaded(model, mixer, textures); },
+    dispose() { disposeLoaded(model, idle?.mixer, textures); },
   };
 }
 
@@ -408,12 +677,12 @@ async function loadEmbeddedNormal(gltf) {
  * Loads the built-in CC0-1.0 modular realistic character with 2048px enhanced facial PBR maps,
  * crisp eyebrows/eyelashes, two-pass feathered hair, glossy eye corneas, and live BMI/height morphing.
  */
-export async function loadCc0Avatar(profile, { clip, reduceMotion }) {
+export async function loadCc0Avatar(profile, { clip, reduceMotion, pose = "relaxed" }) {
   const loader = new GLTFLoader();
   const isFem = profile.gender === "female";
   const garmentFiles = isFem
     ? ["clothing_tshirt.glb", "clothing_jeans.glb", "clothing_shoes.glb", "hair_long01.glb"]
-    : ["clothing_tshirt.glb", "clothing_jacket.glb", "clothing_jeans.glb", "clothing_shoes.glb", "hair_short02.glb"];
+    : ["clothing_tshirt.glb", "clothing_jeans.glb", "clothing_shoes.glb", "hair_short02.glb"];
 
   const [bodyGltf, ...partGltfs] = await Promise.all([
     loader.loadAsync(`${CC0_BASE}/base_body_anim.glb`),
@@ -430,19 +699,34 @@ export async function loadCc0Avatar(profile, { clip, reduceMotion }) {
     }
   });
   const boneByName = new Map((bodySkel?.bones || []).map((b) => [b.name, b]));
+  const restQuats = new Map((bodySkel?.bones || []).map((b) => [b.name, b.quaternion.clone()]));
 
   const normalMapByMat = {};
   const skinNormal = await loadEmbeddedNormal(bodyGltf);
   await Promise.all(partGltfs.map(async (part, i) => {
     const fn = garmentFiles[i];
     if (fn === "clothing_tshirt.glb") normalMapByMat.Cloth_tshirt = await loadEmbeddedNormal(part);
-    if (fn === "clothing_jacket.glb") normalMapByMat.Cloth_jacket = await loadEmbeddedNormal(part);
     if (fn === "clothing_jeans.glb") normalMapByMat.Cloth_jeans = await loadEmbeddedNormal(part);
     if (fn === "clothing_shoes.glb") normalMapByMat.Cloth_shoes = await loadEmbeddedNormal(part);
 
     const meshes = [];
     part.scene.traverse((o) => { if (o.isMesh) meshes.push(o); });
     for (const o of meshes) {
+      if (fn === "clothing_tshirt.glb" && o.geometry) {
+        const pos = o.geometry.getAttribute("position");
+        const norm = o.geometry.getAttribute("normal");
+        if (pos && norm) {
+          for (let k = 0; k < pos.count; k++) {
+            pos.setXYZ(
+              k,
+              pos.getX(k) + norm.getX(k) * 0.004,
+              pos.getY(k) + norm.getY(k) * 0.004,
+              pos.getZ(k) + norm.getZ(k) * 0.004,
+            );
+          }
+          pos.needsUpdate = true;
+        }
+      }
       if (o.isSkinnedMesh && o.skeleton && bodySkel) {
         const bones = o.skeleton.bones.map((b) => boneByName.get(b.name) || b);
         o.bind(new THREE.Skeleton(bones, bodySkel.boneInverses), o.bindMatrix);
@@ -476,21 +760,15 @@ export async function loadCc0Avatar(profile, { clip, reduceMotion }) {
       } else if (m.name === "Cloth_tshirt") {
         if (m.map) texSet.add(m.map);
         m.map = null;
-        m.color.set(isFem ? "#28302b" : "#e3e5e2");
+        m.color.set(isFem ? "#28302b" : "#232725");
         if (normalMapByMat.Cloth_tshirt) {
           m.normalMap = normalMapByMat.Cloth_tshirt;
-          m.normalScale = new THREE.Vector2(0.8, 0.8);
+          m.normalScale = new THREE.Vector2(0.85, 0.85);
         }
         m.roughness = 0.9;
         m.polygonOffset = true;
         m.polygonOffsetFactor = -1;
         m.polygonOffsetUnits = -1;
-      } else if (m.name === "Cloth_jacket") {
-        if (normalMapByMat.Cloth_jacket) {
-          m.normalMap = normalMapByMat.Cloth_jacket;
-          m.normalScale = new THREE.Vector2(1.0, 1.0);
-        }
-        m.roughness = 0.72;
       } else if (m.name === "Cloth_jeans") {
         if (normalMapByMat.Cloth_jeans) {
           m.normalMap = normalMapByMat.Cloth_jeans;
@@ -610,8 +888,11 @@ export async function loadCc0Avatar(profile, { clip, reduceMotion }) {
   const cur = { ...target };
   applyCc0Morphs(morphs, cur, 0);
 
-  const mixer = createIdleAnimator(model, bodyGltf.animations, reduceMotion);
+  const idle = createIdleController(model, bodyGltf.animations, reduceMotion);
   const { root, sizer } = fitModelToStage(model);
+  const poseRig = createPoseController(boneByName, restQuats, model, pose, reduceMotion);
+  idle?.setAllowFidget(poseRig.getPose() === "relaxed");
+  poseRig.apply(0, 0);
 
   function applyScale() {
     const w = clamp(1 + cur.fat * 0.06, 0.94, 1.09);
@@ -623,6 +904,10 @@ export async function loadCc0Avatar(profile, { clip, reduceMotion }) {
   return {
     root,
     setProfile(p) { Object.assign(target, toState(p)); },
+    setPose(nextPose) {
+      poseRig.setPose(nextPose);
+      idle?.setAllowFidget(poseRig.getPose() === "relaxed");
+    },
     update(t, dt) {
       const e = Math.min(1, dt * 5);
       cur.fat += (target.fat - cur.fat) * e;
@@ -636,9 +921,11 @@ export async function loadCc0Avatar(profile, { clip, reduceMotion }) {
       }
       applyCc0Morphs(morphs, cur, blink);
       applyScale();
-      mixer?.update(dt);
+      poseRig.restoreBase();
+      idle?.update(dt);
+      poseRig.apply(t, dt);
     },
     get heightScale() { return cur.heightScale; },
-    dispose() { disposeLoaded(model, mixer, textures); },
+    dispose() { disposeLoaded(model, idle?.mixer, textures); },
   };
 }

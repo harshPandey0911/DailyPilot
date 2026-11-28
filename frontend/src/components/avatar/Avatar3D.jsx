@@ -21,12 +21,13 @@ const clamp01 = (n) => Math.min(1, Math.max(0, n));
 
 /**
  * 3D avatar rising out of a black hole, then a 360° viewer (drag / pinch / auto-rotate).
- * Props: gender ("male" | "female" | "other"), heightCm, weightKg.
+ * Props: gender ("male" | "female" | "other"), heightCm, weightKg, pose, captureRef.
  */
-export default function Avatar3D({ gender, heightCm, weightKg }) {
+export default function Avatar3D({ gender, heightCm, weightKg, pose = "relaxed", captureRef }) {
   const mountRef = useRef(null);
   const avatarRef = useRef(null);
   const profileRef = useRef({ gender, heightCm, weightKg });
+  const poseRef = useRef(pose);
   const [failed, setFailed] = useState(false);
 
   // Weight / height edits ease the existing avatar instead of rebuilding the scene.
@@ -34,6 +35,11 @@ export default function Avatar3D({ gender, heightCm, weightKg }) {
     profileRef.current = { gender, heightCm, weightKg };
     avatarRef.current?.setProfile(profileRef.current);
   }, [gender, heightCm, weightKg]);
+
+  useEffect(() => {
+    poseRef.current = pose;
+    avatarRef.current?.setPose?.(pose);
+  }, [pose]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -72,7 +78,7 @@ export default function Avatar3D({ gender, heightCm, weightKg }) {
     let riseEnd = Infinity;
     let cancelled = false;
     (async () => {
-      const opts = { clip: [floorClip], reduceMotion };
+      const opts = { clip: [floorClip], reduceMotion, pose: poseRef.current };
       const url = `/avatars/${profileRef.current.gender === "female" ? "female" : "male"}.glb`;
       let built = null;
       try {
@@ -83,6 +89,7 @@ export default function Avatar3D({ gender, heightCm, weightKg }) {
       }
       if (!built) built = buildAvatar(profileRef.current, opts);
       if (cancelled) { built.dispose(); return; }
+      built.setPose?.(poseRef.current);
       avatar = built;
       avatarRef.current = built;
       stage.add(built.root);
@@ -148,7 +155,25 @@ export default function Avatar3D({ gender, heightCm, weightKg }) {
     }
     raf = requestAnimationFrame(frame);
 
+    if (captureRef) {
+      captureRef.current = () => {
+        renderer.render(scene, camera);
+        const src = renderer.domElement;
+        const maxH = 768;
+        const scale = src.height > maxH ? maxH / src.height : 1;
+        const out = document.createElement("canvas");
+        out.width = Math.max(1, Math.round(src.width * scale));
+        out.height = Math.max(1, Math.round(src.height * scale));
+        const ctx = out.getContext("2d");
+        ctx.fillStyle = "#f7f9f5";
+        ctx.fillRect(0, 0, out.width, out.height);
+        ctx.drawImage(src, 0, 0, out.width, out.height);
+        return out.toDataURL("image/jpeg", 0.9);
+      };
+    }
+
     return () => {
+      if (captureRef) captureRef.current = null;
       cancelAnimationFrame(raf);
       ro.disconnect();
       controls.dispose();
